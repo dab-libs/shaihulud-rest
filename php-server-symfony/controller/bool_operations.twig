@@ -1,0 +1,43 @@
+{{ writeFile(controllerFolder ~ SEPARATOR ~ 'BoolOperations.php') }}
+<?php declare(strict_types=1);
+
+
+namespace {{ controllerNamespace }};
+
+
+use Exception;
+
+class BoolOperations {
+  /**
+   * @param ?string $value
+   * @param string $name
+   * @return bool|null
+   * @throws Exception
+   */
+  public static function parse(?string $value, string $name): ?bool {
+    if ($value === null) {
+      return null;
+    }
+    $parsed = json_decode($value);
+    if (!is_bool($parsed)) {
+      throw new Exception($name . ' is not a bool');
+    }
+    return $parsed;
+  }
+
+  /**
+   * @param bool|null $value
+   * @param string $name
+   * @param array $options
+   * @return void
+   * @throws Exception
+   */
+  public static function validate(?bool $value, string $name, array $options): void {
+    if ($value === null) {
+      if ($options['required'] === true) {
+        throw new Exception($name . ' is not found');
+      }
+      return;
+    }
+  }
+}

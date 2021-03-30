@@ -1,0 +1,12 @@
+{% import 'macros.twig' %}
+{% set bundleNamespace = info.title|pascalCase %}
+{% set apiFolder = 'Interface' %}
+{% set apiNamespace = bundleNamespace ~ BACK_SLASH ~ apiFolder %}
+{% set controllerFolder = 'Controller' %}
+{% set controllerNamespace = bundleNamespace ~ BACK_SLASH ~ controllerFolder %}
+{% include 'interface/actions.twig' %}
+{% include 'controller/controllers.twig' %}
+{% include 'controller/string_operations.twig' %}
+{% include 'controller/int_operations.twig' %}
+{% include 'controller/float_operations.twig' %}
+{% include 'controller/bool_operations.twig' %}

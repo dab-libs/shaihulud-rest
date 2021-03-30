@@ -1,0 +1,98 @@
+{{ writeFile(controllerFolder ~ SEPARATOR ~ 'ValidationOptions.php') }}
+<?php declare(strict_types=1);
+
+
+namespace {{ controllerNamespace }};
+
+
+class ValidationOptions {
+  private bool $required;
+  private mixed $defaul;
+  private ?string $ref;
+  private ?float $maximum;
+  private bool $exclusiveMaximum;
+  private ?float $minimum;
+  private bool $exclusiveMinimum;
+  private ?float $multipleOf;
+  private ?int $maxLength;
+  private int $minLength;
+  private ?string $pattern;
+  private ?int $maxItems;
+  private ?int $minItems;
+  private bool $uniqueItems;
+
+  public function __construct(bool $required, mixed $default, string $ref, ?float $maximum, ?bool $exclusiveMaximum,
+                              ?float $minimum, ?bool $exclusiveMinimum, ?float $multipleOf, ?int $maxLength,
+                              ?int $minLength, ?string $pattern, ?int $maxItems, ?int $minItems, ?bool $uniqueItems) {
+    $this->required = $required;
+    $this->default = $default;
+    $this->ref = $ref;
+    $this->maximum = $maximum;
+    $this->exclusiveMaximum = $exclusiveMaximum ?: false;
+    $this->minimum = $minimum;
+    $this->exclusiveMinimum = $exclusiveMinimum ?: false;
+    $this->multipleOf = $multipleOf;
+    $this->maxLength = $maxLength;
+    $this->minLength = $minLength ?: 0;
+    $this->pattern = $pattern;
+    $this->maxItems = $maxItems;
+    $this->minItems = $minItems ?: 0;
+    $this->uniqueItems = $uniqueItems ?: false;
+  }
+
+  public function isRequired(): bool {
+    return $this->required;
+  }
+
+  public function getDefault(): mixed {
+    return $this->default;
+  }
+
+  public function getRef(): ?string {
+    return $this->ref;
+  }
+
+  public function getMultipleOf(): ?float {
+    return $this->multipleOf;
+  }
+
+  public function getMaximum(): ?float {
+    return $this->maximum;
+  }
+
+  public function isExclusiveMaximum(): bool {
+    return $this->exclusiveMaximum;
+  }
+
+  public function getMinimum(): ?float {
+    return $this->minimum;
+  }
+
+  public function isExclusiveMinimum(): bool {
+    return $this->exclusiveMinimum;
+  }
+
+  public function getMaxLength(): ?int {
+    return $this->maxLength;
+  }
+
+  public function getMinLength(): int {
+    return $this->minLength;
+  }
+
+  public function getPattern(): ?string {
+    return $this->pattern;
+  }
+
+  public function getMaxItems(): ?int {
+    return $this->maxItems;
+  }
+
+  public function getMinItems(): int {
+    return $this->minItems;
+  }
+
+  public function getUniqueItems(): bool {
+    return $this->uniqueItems;
+  }
+}

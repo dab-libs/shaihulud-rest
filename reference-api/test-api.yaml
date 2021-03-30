@@ -1,0 +1,140 @@
+openapi: "3.0.0"
+info:
+  version: 1.0.0
+  title: Swagger Petstore
+  license:
+    name: MIT
+servers:
+  - url: http://petstore.swagger.io/v1
+paths:
+  /in-path/{pString}/i/{pInteger}/n/{pNumber}/b/{pBoolean}:
+    get:
+      summary: Tests in-path parameters
+      operationId: getBySimpleTypesInPath
+      tags:
+        - test
+      parameters:
+        - name: pString
+          in: path
+          description: String parameter in path
+          required: true
+          schema:
+            type: string
+        - name: pInteger
+          in: path
+          description: Integer parameter in path
+          required: true
+          schema:
+            type: integer
+            format: int32
+            default: 122
+        - name: pNumber
+          in: path
+          description: Number parameter in path
+          required: true
+          schema:
+            type: number
+            format: float
+        - name: pBoolean
+          in: path
+          description: Number parameter in path
+          required: true
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: A paged array of pets
+          headers:
+            x-next:
+              description: A link to the next page of responses
+              schema:
+                type: string
+          content:
+            application/json:    
+              schema:
+                $ref: "#/components/schemas/Pets"
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+  /in-query:
+    get:
+      summary: Tests in-query parameters
+      operationId: getBySimpleTypesInQuery
+      tags:
+        - test
+      parameters:
+        - name: pString
+          in: query
+          description: String parameter in query
+          schema:
+            type: string
+        - name: pInt
+          in: query
+          description: Integer parameter in query
+          required: true
+          schema:
+            type: integer
+            format: int32
+            default: 122
+        - name: pNumber
+          in: query
+          description: Number parameter in query
+          schema:
+            type: number
+            format: float
+        - name: pBoolean
+          in: query
+          description: Number parameter in query
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: A paged array of pets
+          headers:
+            x-next:
+              description: A link to the next page of responses
+              schema:
+                type: string
+          content:
+            application/json:    
+              schema:
+                $ref: "#/components/schemas/Pets"
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+components:
+  schemas:
+    Pet:
+      type: object
+      required:
+        - id
+        - name
+      properties:
+        id:
+          type: integer
+          format: int64
+        name:
+          type: string
+        tag:
+          type: string
+    Pets:
+      type: array
+      items:
+        $ref: "#/components/schemas/Pet"
+    Error:
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string

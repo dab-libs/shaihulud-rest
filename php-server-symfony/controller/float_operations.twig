@@ -1,0 +1,108 @@
+{{ writeFile(controllerFolder ~ SEPARATOR ~ 'FloatOperations.php') }}
+<?php declare(strict_types=1);
+
+
+namespace {{ controllerNamespace }};
+
+
+use Exception;
+
+class FloatOperations {
+ /**
+   * @param ?string $value
+   * @param string $name
+   * @return float|null
+   * @throws Exception
+   */
+  public static function parse(?string $value, string $name): ?float {
+    if ($value === null) {
+      return null;
+    }
+    $parsed= json_decode($value);
+    if (!is_int($parsed) && !is_float($parsed)) {
+      throw new Exception($name . ' is not a number');
+    }
+    return $parsed;
+  }
+
+  /**
+   * @param float|null $value
+   * @param string $name
+   * @param mixed[] $options
+   * @return void
+   * @throws Exception
+   */
+  public static function validate(?float $value, string $name, array $options) {
+    if ($value === null) {
+      if ($options['required'] === true) {
+        throw new Exception($name . ' is not found');
+      }
+      return;
+    }
+    self::validateMaximum($value, $name, $options['maximum'], $options['exclusiveMaximum']);
+    self::validateMinimum($value, $name, $options['maximum'], $options['exclusiveMinimum']);
+    self::validateMultipleOf($value, $name, $options['multipleOf']);
+  }
+
+  /**
+   * @param float $value
+   * @param string $name
+   * @param float|null $maximum
+   * @param bool $exclusiveMaximum
+   * @throws Exception
+   */
+  private static function validateMaximum(float $value, string $name, ?float $maximum, bool $exclusiveMaximum): void {
+    if ($maximum === null) {
+      return;
+    }
+    if ($exclusiveMaximum) {
+      if ($value >= $maximum) {
+        throw new Exception($name . ' is great or equal then ' . $maximum);
+      }
+    }
+    else {
+      if ($value > $maximum) {
+        throw new Exception($name . ' is great then ' . $maximum);
+      }
+    }
+  }
+
+  /**
+   * @param float $value
+   * @param string $name
+   * @param float|null $minimum
+   * @param bool $exclusiveMinimum
+   * @throws Exception
+   */
+  private static function validateMinimum(float $value, string $name, ?float $minimum, bool $exclusiveMinimum): void {
+    if ($minimum === null) {
+      return;
+    }
+    if ($exclusiveMinimum) {
+      if ($value <= $minimum) {
+        throw new Exception($name . ' is little or equal then ' . $minimum);
+      }
+    }
+    else {
+      if ($value < $minimum) {
+        throw new Exception($name . ' is little then ' . $minimum);
+      }
+    }
+  }
+
+  /**
+   * @param float $value
+   * @param string $name
+   * @param float|null $multipleOf
+   * @return void
+   * @throws Exception
+   */
+  private static function validateMultipleOf(float $value, string $name, ?float $multipleOf): void {
+    if ($multipleOf === null) {
+      return;
+    }
+    if ($value % $multipleOf !== null) {
+      throw new Exception($name . ' is not multiple of ' . $multipleOf);
+    }
+  }
+}

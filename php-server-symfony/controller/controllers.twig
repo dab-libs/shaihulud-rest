@@ -1,0 +1,60 @@
+{% for pathsByRouteEntry in paths %}
+{%     set route = pathsByRouteEntry.key %}
+{%     set requestsByMethod = pathsByRouteEntry.value %}
+{%     for requestsByMethodEntry in requestsByMethod %}
+{%         set request = requestsByMethodEntry.value %}
+{%         set actionType = actionTypeName(request) %}
+{%         set controllerType = controllerTypeName(request) %}
+{%         set method = methodName(request) %}
+{{         writeFile(controllerFolder ~ SEPARATOR ~ controllerType ~ '.php') }}
+<?php declare(strict_types=1);
+
+
+namespace {{ controllerNamespace }};
+
+
+use Exception;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
+use {{ apiNamespace ~ BACK_SLASH ~ actionType }};
+
+class {{ controllerType }} {
+  private {{ actionType }} $action;
+
+  public function __construct({{ actionType }} $action) {
+    $this->action = $action;
+  }
+
+  public function {{ method }}(Request $request): Response {
+    try {
+{%          for parameter in request.parameters %}
+      ${{ parameter.name }} = {{ operationsType(parameter.schema, parameter.name, request.operationId) }}::parse($this->getRequestParameter($request, '{{ parameter.name }}', '{{ parameter['in'] }}'), '{{ parameter.name }}');
+      {{ operationsType(parameter.schema, parameter.name, request.operationId) }}::validate(${{ parameter.name }}, '{{ parameter.name }}', {{ typeOptions(parameter.required, parameter.schema, '      ') }});
+
+{%          endfor %}
+      $listPetsResponse = $this->action->{{ method }}({% for parameter in request.parameters %}${{ parameter.name }}{% if not loop.last %}, {% endif %}{% endfor %});
+    }
+    catch (Exception $exception) {
+      $listPetsResponse = $this->action->createExceptedResult($exception);
+    }
+
+    return ListPetsResultOperations::createResponse($listPetsResponse);
+  }
+
+  private function getRequestParameter(Request $request, string $name, string $in): ?string {
+    switch ($in) {
+      case 'path':
+        return $request->attributes->get($name);
+      case 'query':
+        return $request->query->get($name);
+      case 'header':
+        return $request->headers->get($name);
+      case 'cookie':
+        return $request->cookies->get($name);
+    }
+    return null;
+  }
+
+}
+{%     endfor %}
+{% endfor %}

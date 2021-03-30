@@ -1,0 +1,40 @@
+{% for pathsByRouteEntry in paths %}
+{%     set route = pathsByRouteEntry.key %}
+{%     set requestsByMethod = pathsByRouteEntry.value %}
+{%     for requestsByMethodEntry in requestsByMethod %}
+{%         set request = requestsByMethodEntry.value %}
+{%         set actionType = actionTypeName(request) %}
+{%         set method = methodName(request) %}
+{{         writeFile(apiFolder ~ SEPARATOR ~ actionType ~ '.php') }}
+<?php declare(strict_types=1);
+
+namespace {{ apiNamespace }};
+
+use Exception;
+
+interface {{ actionType }} {
+  /**
+{%          for parameter in request.parameters %}
+{%              set type = parameterTypeName(parameter, request) %}
+{%              set nullable = parameter.required ? '' : '|null' %}
+   * @param {{ type }}{{ nullable }} ${{ parameter.name }} {{ parameter.description }}
+
+{%          endfor %}
+   * @return ActionResult
+   * @throws Exception
+   */
+  public function {{ method }}(
+{%          for parameter in request.parameters %}
+{%              set type = parameterTypeName(parameter, request) %}
+{%              set nullable = parameter.required ? '' : '?' %}
+    {{ nullable }}{{ type }} ${{ parameter.name }}{% if not loop.last %},{% endif %}
+
+{%          endfor %}
+  ): ActionResult;
+
+  public function createExceptedResult(
+    Exception $exception
+  ): ActionResult;
+}
+{%     endfor %}
+{% endfor %}

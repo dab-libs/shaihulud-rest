@@ -1,0 +1,1 @@
+java -jar shaihulud.jar -s open-api-3.0-schema.json -y reference-api\test-api.yaml -r php-server-symfony -m main.twig -o out

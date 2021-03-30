@@ -1,0 +1,62 @@
+{{ writeFile(controllerFolder ~ SEPARATOR ~ 'StringOperations.php') }}
+<?php declare(strict_types=1);
+
+
+namespace {{ controllerNamespace }};
+
+
+use Exception;
+
+class StringOperations {
+  /**
+   * @param ?string $value
+   * @param string $name
+   * @return string|null
+   */
+  public static function parse(?string $value, string $name): ?string {
+    return $value;
+  }
+
+  /**
+   * @param string|null $value
+   * @param string $name
+   * @param array $options
+   * @return void
+   * @throws Exception
+   */
+  public static function validate(?string $value, string $name, array $options): void {
+    if ($value === null) {
+      if ($options['required'] === true) {
+        throw new Exception($name . ' is not found');
+      }
+      return;
+    }
+
+    self::validateMaxLength($value, $name, $options['maxLength']);
+    self::validateMinLength($value, $name, $options['minLength']);
+  }
+
+  /**
+   * @param string $value
+   * @param string $name
+   * @param int $maxLength
+   * @throws Exception
+   */
+  private static function validateMaxLength(string $value, string $name, int $maxLength): void {
+    if ($maxLength !== null && strlen($value) > $maxLength) {
+      throw new Exception($name . ' is too long. Its length is great then ' . $maxLength);
+    }
+  }
+
+  /**
+   * @param string $value
+   * @param string $name
+   * @param int $minLength
+   * @throws Exception
+   */
+  private static function validateMinLength(string $value, string $name, int $minLength): void {
+    if ($minLength !== null && strlen($value) > $minLength) {
+      throw new Exception($name . ' is too long. Its length is great then ' . $minLength);
+    }
+  }
+}
