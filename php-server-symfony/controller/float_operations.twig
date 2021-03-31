@@ -28,20 +28,28 @@ class FloatOperations {
   /**
    * @param float|null $value
    * @param string $name
-   * @param mixed[] $options
+   * @param bool $required
+   * @param int|null $maximum
+   * @param bool $exclusiveMaximum
+   * @param int|null $minimum
+   * @param bool $exclusiveMinimum
+   * @param float|null $multipleOf
    * @return void
    * @throws Exception
    */
-  public static function validate(?float $value, string $name, array $options) {
+  public static function validate(?float $value, string $name, bool $required,
+                                  ?int $maximum, bool $exclusiveMaximum,
+                                  ?int $minimum, bool $exclusiveMinimum,
+                                  ?float $multipleOf): void {
     if ($value === null) {
-      if ($options['required'] === true) {
+      if ($required === true) {
         throw new Exception($name . ' is not found');
       }
       return;
     }
-    self::validateMaximum($value, $name, $options['maximum'], $options['exclusiveMaximum']);
-    self::validateMinimum($value, $name, $options['maximum'], $options['exclusiveMinimum']);
-    self::validateMultipleOf($value, $name, $options['multipleOf']);
+    self::validateMaximum($value, $name, $maximum, $exclusiveMaximum);
+    self::validateMinimum($value, $name, $minimum, $exclusiveMinimum);
+    self::validateMultipleOf($value, $name, $multipleOf);
   }
 
   /**

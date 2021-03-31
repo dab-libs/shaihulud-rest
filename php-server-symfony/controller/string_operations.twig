@@ -20,20 +20,22 @@ class StringOperations {
   /**
    * @param string|null $value
    * @param string $name
-   * @param array $options
+   * @param bool $required
+   * @param int $minLength
+   * @param int|null $maxLength
    * @return void
    * @throws Exception
    */
-  public static function validate(?string $value, string $name, array $options): void {
+  public static function validate(?string $value, string $name, bool $required, int $minLength, ?int $maxLength): void {
     if ($value === null) {
-      if ($options['required'] === true) {
+      if ($required) {
         throw new Exception($name . ' is not found');
       }
       return;
     }
 
-    self::validateMaxLength($value, $name, $options['maxLength']);
-    self::validateMinLength($value, $name, $options['minLength']);
+    self::validateMaxLength($value, $name, $maxLength);
+    self::validateMinLength($value, $name, $minLength);
   }
 
   /**
@@ -44,7 +46,7 @@ class StringOperations {
    */
   private static function validateMaxLength(string $value, string $name, int $maxLength): void {
     if ($maxLength !== null && strlen($value) > $maxLength) {
-      throw new Exception($name . ' is too long. Its length is great then ' . $maxLength);
+      throw new Exception($name . ' is too long. Its length is greater then ' . $maxLength);
     }
   }
 
@@ -55,8 +57,8 @@ class StringOperations {
    * @throws Exception
    */
   private static function validateMinLength(string $value, string $name, int $minLength): void {
-    if ($minLength !== null && strlen($value) > $minLength) {
-      throw new Exception($name . ' is too long. Its length is great then ' . $minLength);
+    if (strlen($value) > $minLength) {
+      throw new Exception($name . ' is too short. Its length is littler then ' . $minLength);
     }
   }
 }

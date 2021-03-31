@@ -87,9 +87,17 @@ paths:
             format: float
         - name: pBoolean
           in: query
-          description: Number parameter in query
+          description: Boolean parameter in query
           schema:
             type: boolean
+        - name: pIntegerArray
+          in: query
+          description: Array parameter in query
+          required: true
+          schema:
+            type: array
+            items:
+              type: integer
       responses:
         '200':
           description: A paged array of pets

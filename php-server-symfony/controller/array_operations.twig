@@ -1,0 +1,92 @@
+{{ writeFile(controllerFolder ~ SEPARATOR ~ 'ArrayOperations.php') }}
+<?php declare(strict_types=1);
+
+
+namespace {{ controllerNamespace }};
+
+
+use Exception;
+
+class ArrayOperations {
+  /**
+   * @param ?string $value
+   * @param string $name
+   * @return array|null
+   * @throws Exception
+   */
+  public static function parse(?string $value, string $name): ?array {
+    if ($value === null) {
+      return null;
+    }
+    $parsed = json_decode($value);
+    if (!is_array($parsed)) {
+      throw new Exception($name . ' is not a array');
+    }
+    return $parsed;
+  }
+
+  /**
+   * @param array|null $value
+   * @param string $name
+   * @param bool $required
+   * @param int $minItems
+   * @param int|null $maxItems
+   * @param callable $validateItem
+   * @return void
+   * @throws Exception
+   */
+  public static function validate(?array $value, string $name, bool $required,
+                                  int $minItems, ?int $maxItems,
+                                  callable $validateItem): void {
+    if ($value === null) {
+      if ($required === true) {
+        throw new Exception($name . ' is not found');
+      }
+    }
+
+    self::validateMinItems($value, $name, $minItems);
+    self::validateMaxItems($value, $name, $maxItems);
+    self::validateItems($value, $name, $validateItem);
+  }
+
+  /**
+   * @param array $value
+   * @param string $name
+   * @param int $minItems
+   * @throws Exception
+   */
+  private static function validateMinItems(array $value, string $name, int $minItems): void {
+    if (count($value) < $minItems) {
+      throw new Exception($name . ' is too short. Its length is littler then ' . $minItems);
+    }
+  }
+
+  /**
+   * @param array $value
+   * @param string $name
+   * @param int|null $maxItems
+   * @throws Exception
+   */
+  private static function validateMaxItems(array $value, string $name, ?int $maxItems): void {
+    if ($maxItems !== null && count($value) > $maxItems) {
+      throw new Exception($name . ' is too long. Its length is greater then ' . $minItems);
+    }
+  }
+
+  /**
+   * @param array $value
+   * @param string $name
+   * @param callable $validateItem
+   * @throws Exception
+   */
+  private static function validateItems(array $value, string $name, callable $validateItem): void {
+    try {
+      foreach ($value as $i => $item) {
+        $validateItem($item, $i);
+      }
+    }
+    catch (Exception $e) {
+      throw new Exception($name . '\'s item is not valid. ' . $e->getMessage(), $e);
+    }
+  }
+}

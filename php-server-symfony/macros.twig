@@ -1,8 +1,8 @@
-{% macro actionTypeName(request) %}
+{% macro actionType(request) %}
 {{   request.operationId|pascalCase ~ 'ActionInterface' }}
 {% endmacro %}
 
-{% macro controllerTypeName(request) %}
+{% macro controllerType(request) %}
 {{   request.operationId|pascalCase ~ 'Controller' }}
 {% endmacro %}
 
@@ -10,7 +10,7 @@
 {{   request.operationId }}
 {% endmacro %}
 
-{% macro parameterTypeName(schema, name, parentName) %}
+{% macro parameterType(schema, name, parentName) %}
 {%   if schema contains '$ref' %}
 {%     set typeName = schema['$ref'] | replaceAll('#/components/schemas/(\w+)', '\u$1') %}
 {%   elseif schema.type == 'string' %}
@@ -30,7 +30,7 @@
 {% endmacro %}
 
 {% macro operationsType(schema, name, parentName) %}
-{{   parameterTypeName(schema, name, parentName) | upperCaseFirst ~ 'Operations' }}
+{{   parameterType(schema, name, parentName) | upperCaseFirst ~ 'Operations' }}
 {% endmacro %}
 
 {% macro literal(value) %}
@@ -46,58 +46,47 @@
 {{   literal(value) }}
 {% endmacro %}
 
-{% macro stringOptions(required, schema, indent) %}
-[
-{{ indent }}  'required' => {{ literal(required) }},
-{{ indent }}  'maxLength' => {{ literal(schema.maxLength) }},
-{{ indent }}  'minLength' => {{ literal(schema.minLength) }},
-{{ indent }}]{% endmacro %}
+{% macro stringOptions(required, schema) %}
+required: {{ literal(required) }}
+, minLength: {{ literal(schema.minLength) }}
+, maxLength: {{ literal(schema.maxLength) }}
+{% endmacro %}
 
-{% macro numberOptions(required, schema, indent) %}
-[
-{{ indent }}  'required' => {{ literal(required) }},
-{{ indent }}  'maximum' => {{ literal(schema.maximum) }},
-{{ indent }}  'exclusiveMaximum' => {{ literal(schema.exclusiveMaximum) }},
-{{ indent }}  'minimum' => {{ literal(schema.minimum) }},
-{{ indent }}  'exclusiveMinimum' => {{ literal(schema.exclusiveMinimum) }},
-{{ indent }}  'multipleOf' => {{ literal(schema.multipleOf) }},
-{{ indent }}]{% endmacro %}
+{% macro numberOptions(required, schema) %}
+required: {{ literal(required) }}
+, maximum: {{ literal(schema.maximum) }}
+, exclusiveMaximum: {{ literal(schema.exclusiveMaximum) }}
+, minimum: {{ literal(schema.minimum) }}
+, exclusiveMinimum: {{ literal(schema.exclusiveMinimum) }}
+, multipleOf: {{ literal(schema.multipleOf) }}
+{% endmacro %}
 
-{% macro boolOptions(required, schema, indent) %}
-['required' => {{ literal(required) }} ]{% endmacro %}
+{% macro boolOptions(required, schema) %}
+required: {{ literal(required) }}
+{% endmacro %}
 
-{% macro typeOptions(required, schema, indent) %}
+{% macro arrayOptions(name, required, schema) %}
+{%   set type = parameterType(schema.items, 'item', name) %}
+required: {{ literal(required) }}
+, minItems: {{ literal(schema.minItems) }}
+, maxItems: {{ literal(schema.maxItems) }}
+, validateItem: fn(?{{ type }} $value, string $name) => {{ operationsType(schema.items, 'item', name) }}::validate(value: $value, name: $name, {{ typeOptions(name ~ 'Item', true, schema.items) }}){% endmacro %}
+
+{% macro typeOptions(name, required, schema) %}
 {%   if schema contains '$ref' %}
 {%     set typeName = schema['$ref'] | replaceAll('#/components/schemas/(\w+)', '\u$1') %}
 {%   elseif schema.type == 'string' %}
-{%     set options = stringOptions(required, schema, indent) %}
+{%     set options = stringOptions(required, schema) %}
 {%   elseif schema.type == 'integer' %}
-{%     set options = numberOptions(required, schema, indent) %}
+{%     set options = numberOptions(required, schema) %}
 {%   elseif schema.type == 'number' %}
-{%     set options = numberOptions(required, schema, indent) %}
+{%     set options = numberOptions(required, schema) %}
 {%   elseif schema.type == 'boolean' %}
-{%     set options = boolOptions(required, schema, indent) %}
+{%     set options = boolOptions(required, schema) %}
 {%   elseif schema.type == 'array' %}
-{%     set typeName = 'array' %}
+{%     set options = arrayOptions(name, required, schema) %}
 {%   elseif schema.type == 'object' %}
 {%     set typeName = classNameForObject %}
 {%   endif %}
-{{   options }}{% endmacro %}
-
-{% macro validationOptions2(required, schema, indent) %}
-new ValidationOptions(
-{{ indent }}  {{ literal(required) }},    // required
-{{ indent }}  {{ literal(schema.default) }},    // default
-{{ indent }}  {{ literal(schema['$ref']) }},    // ref
-{{ indent }}  {{ literal(schema.multipleOf) }},    // multipleOf
-{{ indent }}  {{ literal(schema.maximum) }},    // maximum
-{{ indent }}  {{ literal(schema.exclusiveMaximum) }},    // exclusiveMaximum
-{{ indent }}  {{ literal(schema.minimum) }},    // minimum
-{{ indent }}  {{ literal(schema.exclusiveMinimum) }},    // exclusiveMinimum
-{{ indent }}  {{ literal(schema.maxLength) }},    // maxLength
-{{ indent }}  {{ literal(schema.minLength) }},    // minLength
-{{ indent }}  {{ literal(schema.pattern) }},    // pattern
-{{ indent }}  {{ literal(schema.maxItems) }},    // maxItems
-{{ indent }}  {{ literal(schema.minItems) }},    // minItems
-{{ indent }}  {{ literal(schema.uniqueItems) }}    // uniqueItems
-{{ indent }}){% endmacro %}
+{{   options }}
+{% endmacro %}

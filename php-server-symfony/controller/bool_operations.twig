@@ -28,16 +28,15 @@ class BoolOperations {
   /**
    * @param bool|null $value
    * @param string $name
-   * @param array $options
+   * @param bool $required
    * @return void
    * @throws Exception
    */
-  public static function validate(?bool $value, string $name, array $options): void {
+  public static function validate(?bool $value, string $name, bool $required): void {
     if ($value === null) {
-      if ($options['required'] === true) {
+      if ($required === true) {
         throw new Exception($name . ' is not found');
       }
-      return;
     }
   }
 }

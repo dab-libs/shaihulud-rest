@@ -1,12 +1,12 @@
 {% for pathsByRouteEntry in paths %}
-{%     set route = pathsByRouteEntry.key %}
-{%     set requestsByMethod = pathsByRouteEntry.value %}
-{%     for requestsByMethodEntry in requestsByMethod %}
-{%         set request = requestsByMethodEntry.value %}
-{%         set actionType = actionTypeName(request) %}
-{%         set controllerType = controllerTypeName(request) %}
-{%         set method = methodName(request) %}
-{{         writeFile(controllerFolder ~ SEPARATOR ~ controllerType ~ '.php') }}
+{%   set route = pathsByRouteEntry.key %}
+{%   set requestsByMethod = pathsByRouteEntry.value %}
+{%   for requestsByMethodEntry in requestsByMethod %}
+{%     set request = requestsByMethodEntry.value %}
+{%     set actionType = actionType(request) %}
+{%     set controllerType = controllerType(request) %}
+{%     set method = methodName(request) %}
+{{     writeFile(controllerFolder ~ SEPARATOR ~ controllerType ~ '.php') }}
 <?php declare(strict_types=1);
 
 
@@ -27,11 +27,11 @@ class {{ controllerType }} {
 
   public function {{ method }}(Request $request): Response {
     try {
-{%          for parameter in request.parameters %}
+{%     for parameter in request.parameters %}
       ${{ parameter.name }} = {{ operationsType(parameter.schema, parameter.name, request.operationId) }}::parse($this->getRequestParameter($request, '{{ parameter.name }}', '{{ parameter['in'] }}'), '{{ parameter.name }}');
-      {{ operationsType(parameter.schema, parameter.name, request.operationId) }}::validate(${{ parameter.name }}, '{{ parameter.name }}', {{ typeOptions(parameter.required, parameter.schema, '      ') }});
+      {{ operationsType(parameter.schema, parameter.name, request.operationId) }}::validate(value: ${{ parameter.name }}, name: '{{ parameter.name }}', {{ typeOptions(parameter.name, parameter.required, parameter.schema) }});
 
-{%          endfor %}
+{%     endfor %}
       $listPetsResponse = $this->action->{{ method }}({% for parameter in request.parameters %}${{ parameter.name }}{% if not loop.last %}, {% endif %}{% endfor %});
     }
     catch (Exception $exception) {
@@ -54,7 +54,6 @@ class {{ controllerType }} {
     }
     return null;
   }
-
 }
-{%     endfor %}
+{%   endfor %}
 {% endfor %}
