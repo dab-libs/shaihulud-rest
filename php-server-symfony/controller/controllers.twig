@@ -33,7 +33,25 @@ class {{ controllerType }} {
       ${{ parameter.name }} = {{ operationsType(parameter.schema, parameter.name, request.operationId) }}::create(${{ parameter.name }}Parsed{{ arrayItemCreator(parameter.schema) }});
 
 {%     endfor %}
-      $listPetsResponse = $this->action->{{ method }}({% for parameter in request.parameters %}${{ parameter.name }}{% if not loop.last %}, {% endif %}{% endfor %});
+{%     if request contains 'requestBody' %}
+{%       if request.requestBody.content['application/json'] == null %}
+{{         halt('Can not be generated code for content is not \'application/json\'') }}
+{%       endif %}
+{%       set schema = request.requestBody.content['application/json'].schema %}
+{%       set type = type(schema, 'body', request.operationId) %}
+      $bodyParsed = {{ operationsType(schema, 'body', request.operationId) }}::parse($request->getContent());
+      {{ operationsType(schema, 'body', request.operationId) }}::validate(parsed: $bodyParsed, name: 'body', {{ typeOptions('body', true, schema, components.schemas) }});
+      $body = {{ operationsType(schema, 'body', request.operationId) }}::create($bodyParsed{{ arrayItemCreator(schema) }});
+{%     endif %}
+
+      $listPetsResponse = $this->action->{{ method }}(
+{%     for parameter in request.parameters %}
+        ${{ parameter.name }},
+{%     endfor %}
+{%     if request.requestBody.content['application/json'] != null %}
+        $body,
+{%     endif %}
+      );
     }
     catch (Exception $exception) {
       $listPetsResponse = $this->action->createExceptedResult($exception);

@@ -20,6 +20,14 @@ interface {{ actionType }} {
    * @param {{ type }}{{ nullable }} ${{ parameter.name }} {{ parameter.description }}
 
 {%          endfor %}
+{%          if request contains 'requestBody' %}
+{%            if request.requestBody.content['application/json'] == null %}
+{{              halt('Can not be generated code for content is not \'application/json\'') }}
+{%            endif %}
+{%            set schema = request.requestBody.content['application/json'].schema %}
+{%            set type = type(schema, 'body', request.operationId) %}
+   * @param {{ type }} $body
+{%          endif %}
    * @return ActionResult
    * @throws Exception
    */
@@ -27,9 +35,16 @@ interface {{ actionType }} {
 {%          for parameter in request.parameters %}
 {%              set type = type(parameter.schema, parameter.name, request.operationId) %}
 {%              set nullable = parameter.required ? '' : '?' %}
-    {{ nullable }}{{ type }} ${{ parameter.name }}{% if not loop.last %},{% endif %}
-
+    {{ nullable }}{{ type }} ${{ parameter.name }},
 {%          endfor %}
+{%          if request contains 'requestBody' %}
+{%            if request.requestBody.content['application/json'] == null %}
+{{              halt('Can not be generated code for content is not \'application/json\'') }}
+{%            endif %}
+{%            set scheme = request.requestBody.content['application/json'].schema %}
+{%            set type = type(schema, 'body', request.operationId) %}
+    {{ type }} $body,
+{%          endif %}
   ): ActionResult;
 
   public function createExceptedResult(

@@ -122,6 +122,41 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/Error"
+  /post:
+    post:
+      summary: Tests in-query parameters
+      operationId: postBody
+      tags:
+        - test
+      parameters:
+        - name: pString
+          in: query
+          description: String parameter in query
+          schema:
+            type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: integer
+      responses:
+        '200':
+          description: A paged array of pets
+          headers:
+            x-next:
+              description: A link to the next page of responses
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Pets"
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
 components:
   schemas:
     Pet:

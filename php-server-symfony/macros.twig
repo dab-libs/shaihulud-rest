@@ -81,10 +81,10 @@ required: {{ literal(required) }}
 {%     set refSchemaName = schema['$ref'] | replaceAll('#/components/schemas/(\w+)', '$1') %}
 {%     set refSchema = allSchemas[refSchemaName] %}
 {%     if refSchema contains '$ref' %}
-{{       halt('1 Can be generated code for "' ~ schema['$ref'] ~ '"') }}
+{{       halt('Can not be generated code for "' ~ schema['$ref'] ~ '"') }}
 {%     endif %}
 {%     if refSchema.type != 'object' %}
-{{       halt('2 Can be generated code for "' ~ schema['$ref'] ~ '"') }}
+{{       halt('Can not be generated code for "' ~ schema['$ref'] ~ '"') }}
 {%     endif %}
 {%     set options = objectOptions(required, schema) %}
 {%   elseif schema.type == 'string' %}
