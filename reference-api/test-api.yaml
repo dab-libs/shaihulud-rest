@@ -98,6 +98,12 @@ paths:
             type: array
             items:
               type: integer
+        - name: pObject
+          in: query
+          description: Array parameter in query
+          required: true
+          schema:
+            $ref: '#/components/schemas/SampleObject'
       responses:
         '200':
           description: A paged array of pets
@@ -146,3 +152,23 @@ components:
           format: int32
         message:
           type: string
+    SampleObject:
+      type: object
+      required:
+        - pInteger
+      properties:
+        pString:
+          type: string
+        pInteger:
+          type: integer
+          maximum: 123
+        pNumber:
+          type: number
+          minimum: 1239
+        pBoolean:
+          type: boolean
+        pArray:
+          type: array
+          items:
+            type: integer
+            minimum: 6

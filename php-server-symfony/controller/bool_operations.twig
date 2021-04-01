@@ -1,42 +1,44 @@
 {{ writeFile(controllerFolder ~ SEPARATOR ~ 'BoolOperations.php') }}
 <?php declare(strict_types=1);
 
-
 namespace {{ controllerNamespace }};
-
 
 use Exception;
 
 class BoolOperations {
   /**
    * @param ?string $value
-   * @param string $name
-   * @return bool|null
-   * @throws Exception
+   * @return mixed
    */
-  public static function parse(?string $value, string $name): ?bool {
+  public static function parse(?string $value): mixed {
     if ($value === null) {
       return null;
     }
-    $parsed = json_decode($value);
-    if (!is_bool($parsed)) {
-      throw new Exception($name . ' is not a bool');
-    }
-    return $parsed;
+    return json_decode($value);
   }
 
   /**
-   * @param bool|null $value
+   * @param mixed $parsed
    * @param string $name
    * @param bool $required
    * @return void
    * @throws Exception
    */
-  public static function validate(?bool $value, string $name, bool $required): void {
-    if ($value === null) {
+  public static function validate(mixed $parsed, string $name, bool $required): void {
+    if ($parsed === null) {
       if ($required === true) {
         throw new Exception($name . ' is not found');
       }
     }
+    if (!is_bool($parsed)) {
+      throw new Exception($name . ' is not a bool');
+    }
+  }
+
+  public static function create(mixed $parsed): ?bool {
+    if ($parsed === null) {
+      return null;
+    }
+    return boolval($parsed);
   }
 }

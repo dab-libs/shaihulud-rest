@@ -10,15 +10,14 @@ use Exception;
 class StringOperations {
   /**
    * @param ?string $value
-   * @param string $name
-   * @return string|null
+   * @return mixed
    */
-  public static function parse(?string $value, string $name): ?string {
+  public static function parse(?string $value): mixed {
     return $value;
   }
 
   /**
-   * @param string|null $value
+   * @param mixed $parsed
    * @param string $name
    * @param bool $required
    * @param int $minLength
@@ -26,16 +25,25 @@ class StringOperations {
    * @return void
    * @throws Exception
    */
-  public static function validate(?string $value, string $name, bool $required, int $minLength, ?int $maxLength): void {
-    if ($value === null) {
+  public static function validate(mixed $parsed, string $name, bool $required, int $minLength, ?int $maxLength): void {
+    if ($parsed === null) {
       if ($required) {
         throw new Exception($name . ' is not found');
       }
       return;
     }
+    if (!is_string($parsed)) {
+      throw new Exception($name . ' is not a float');
+    }
+    self::validateMaxLength($parsed, $name, $maxLength);
+    self::validateMinLength($parsed, $name, $minLength);
+  }
 
-    self::validateMaxLength($value, $name, $maxLength);
-    self::validateMinLength($value, $name, $minLength);
+  public static function create(mixed $parsed): ?string {
+    if ($parsed === null) {
+      return null;
+    }
+    return strval($parsed);
   }
 
   /**

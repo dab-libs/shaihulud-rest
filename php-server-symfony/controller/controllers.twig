@@ -28,8 +28,9 @@ class {{ controllerType }} {
   public function {{ method }}(Request $request): Response {
     try {
 {%     for parameter in request.parameters %}
-      ${{ parameter.name }} = {{ operationsType(parameter.schema, parameter.name, request.operationId) }}::parse($this->getRequestParameter($request, '{{ parameter.name }}', '{{ parameter['in'] }}'), '{{ parameter.name }}');
-      {{ operationsType(parameter.schema, parameter.name, request.operationId) }}::validate(value: ${{ parameter.name }}, name: '{{ parameter.name }}', {{ typeOptions(parameter.name, parameter.required, parameter.schema) }});
+      ${{ parameter.name }}Parsed = {{ operationsType(parameter.schema, parameter.name, request.operationId) }}::parse($this->getRequestParameter($request, '{{ parameter.name }}', '{{ parameter['in'] }}'));
+      {{ operationsType(parameter.schema, parameter.name, request.operationId) }}::validate(parsed: ${{ parameter.name }}Parsed, name: '{{ parameter.name }}', {{ typeOptions(parameter.name, parameter.required, parameter.schema, components.schemas) }});
+      ${{ parameter.name }} = {{ operationsType(parameter.schema, parameter.name, request.operationId) }}::create(${{ parameter.name }}Parsed{{ arrayItemCreator(parameter.schema) }});
 
 {%     endfor %}
       $listPetsResponse = $this->action->{{ method }}({% for parameter in request.parameters %}${{ parameter.name }}{% if not loop.last %}, {% endif %}{% endfor %});

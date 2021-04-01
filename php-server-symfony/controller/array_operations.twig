@@ -10,23 +10,17 @@ use Exception;
 class ArrayOperations {
   /**
    * @param ?string $value
-   * @param string $name
-   * @return array|null
-   * @throws Exception
+   * @return mixed
    */
-  public static function parse(?string $value, string $name): ?array {
+  public static function parse(?string $value): mixed {
     if ($value === null) {
       return null;
     }
-    $parsed = json_decode($value);
-    if (!is_array($parsed)) {
-      throw new Exception($name . ' is not a array');
-    }
-    return $parsed;
+    return json_decode($value);
   }
 
   /**
-   * @param array|null $value
+   * @param array|null $parsed
    * @param string $name
    * @param bool $required
    * @param int $minItems
@@ -35,18 +29,33 @@ class ArrayOperations {
    * @return void
    * @throws Exception
    */
-  public static function validate(?array $value, string $name, bool $required,
+  public static function validate(?array $parsed, string $name, bool $required,
                                   int $minItems, ?int $maxItems,
                                   callable $validateItem): void {
-    if ($value === null) {
+    if ($parsed === null) {
       if ($required === true) {
         throw new Exception($name . ' is not found');
       }
     }
 
-    self::validateMinItems($value, $name, $minItems);
-    self::validateMaxItems($value, $name, $maxItems);
-    self::validateItems($value, $name, $validateItem);
+    if (!is_array($parsed)) {
+      throw new Exception($name . ' is not a array');
+    }
+
+    self::validateMinItems($parsed, $name, $minItems);
+    self::validateMaxItems($parsed, $name, $maxItems);
+    self::validateItems($parsed, $name, $validateItem);
+  }
+
+  public static function create(mixed $parsed, callable $createItem): ?array {
+    if ($parsed === null) {
+      return null;
+    }
+    $array = [];
+    foreach ($parsed as $item) {
+      $array[] = $createItem($item);
+    }
+    return $array;
   }
 
   /**

@@ -10,9 +10,9 @@
 {{   request.operationId }}
 {% endmacro %}
 
-{% macro parameterType(schema, name, parentName) %}
+{% macro type(schema, name, parentName) %}
 {%   if schema contains '$ref' %}
-{%     set typeName = schema['$ref'] | replaceAll('#/components/schemas/(\w+)', '\u$1') %}
+{%     set typeName = schema['$ref'] | replaceAll('#/components/schemas/(\w+)', '$1') | upperCaseFirst %}
 {%   elseif schema.type == 'string' %}
 {%     set typeName = 'string' %}
 {%   elseif schema.type == 'integer' %}
@@ -24,13 +24,13 @@
 {%   elseif schema.type == 'array' %}
 {%     set typeName = 'array' %}
 {%   elseif schema.type == 'object' %}
-{%     set typeName = parentName ~ ' ' ~ name | pascalCase %}
+{{     halt('Can be generated code for "' ~ name ~ '" in "' ~ parentName ~ '"') }}
 {%   endif %}
 {{   typeName }}
 {% endmacro %}
 
 {% macro operationsType(schema, name, parentName) %}
-{{   parameterType(schema, name, parentName) | upperCaseFirst ~ 'Operations' }}
+{{   type(schema, name, parentName) | upperCaseFirst ~ 'Operations' }}
 {% endmacro %}
 
 {% macro literal(value) %}
@@ -66,15 +66,27 @@ required: {{ literal(required) }}
 {% endmacro %}
 
 {% macro arrayOptions(name, required, schema) %}
-{%   set type = parameterType(schema.items, 'item', name) %}
+{%   set type = type(schema.items, 'item', name) %}
 required: {{ literal(required) }}
 , minItems: {{ literal(schema.minItems) }}
 , maxItems: {{ literal(schema.maxItems) }}
-, validateItem: fn(?{{ type }} $value, string $name) => {{ operationsType(schema.items, 'item', name) }}::validate(value: $value, name: $name, {{ typeOptions(name ~ 'Item', true, schema.items) }}){% endmacro %}
+, validateItem: fn(?{{ type }} $parsed, string $name) => {{ operationsType(schema.items, 'item', name) }}::validate(parsed: $parsed, name: $name, {{ typeOptions(name ~ 'Item', true, schema.items) }}){% endmacro %}
 
-{% macro typeOptions(name, required, schema) %}
+{% macro objectOptions(required, schema) %}
+required: {{ literal(required) }}
+{% endmacro %}
+
+{% macro typeOptions(name, required, schema, allSchemas) %}
 {%   if schema contains '$ref' %}
-{%     set typeName = schema['$ref'] | replaceAll('#/components/schemas/(\w+)', '\u$1') %}
+{%     set refSchemaName = schema['$ref'] | replaceAll('#/components/schemas/(\w+)', '$1') %}
+{%     set refSchema = allSchemas[refSchemaName] %}
+{%     if refSchema contains '$ref' %}
+{{       halt('1 Can be generated code for "' ~ schema['$ref'] ~ '"') }}
+{%     endif %}
+{%     if refSchema.type != 'object' %}
+{{       halt('2 Can be generated code for "' ~ schema['$ref'] ~ '"') }}
+{%     endif %}
+{%     set options = objectOptions(required, schema) %}
 {%   elseif schema.type == 'string' %}
 {%     set options = stringOptions(required, schema) %}
 {%   elseif schema.type == 'integer' %}
@@ -90,3 +102,9 @@ required: {{ literal(required) }}
 {%   endif %}
 {{   options }}
 {% endmacro %}
+
+{% macro arrayItemCreator(schema) %}
+{%   if schema.type == 'array' %}
+, fn(mixed $parsed) => {{ operationsType(schema.items, 'item', name) }}::create($parsed){% endif %}
+{% endmacro %}
+

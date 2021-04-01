@@ -1,32 +1,24 @@
 {{ writeFile(controllerFolder ~ SEPARATOR ~ 'FloatOperations.php') }}
 <?php declare(strict_types=1);
 
-
 namespace {{ controllerNamespace }};
-
 
 use Exception;
 
 class FloatOperations {
- /**
+  /**
    * @param ?string $value
-   * @param string $name
-   * @return float|null
-   * @throws Exception
+   * @return mixed
    */
-  public static function parse(?string $value, string $name): ?float {
+  public static function parse(?string $value): mixed {
     if ($value === null) {
       return null;
     }
-    $parsed= json_decode($value);
-    if (!is_int($parsed) && !is_float($parsed)) {
-      throw new Exception($name . ' is not a number');
-    }
-    return $parsed;
+    return json_decode($value);
   }
 
   /**
-   * @param float|null $value
+   * @param mixed $parsed
    * @param string $name
    * @param bool $required
    * @param int|null $maximum
@@ -37,19 +29,29 @@ class FloatOperations {
    * @return void
    * @throws Exception
    */
-  public static function validate(?float $value, string $name, bool $required,
+  public static function validate(mixed $parsed, string $name, bool $required,
                                   ?int $maximum, bool $exclusiveMaximum,
                                   ?int $minimum, bool $exclusiveMinimum,
                                   ?float $multipleOf): void {
-    if ($value === null) {
+    if ($parsed === null) {
       if ($required === true) {
         throw new Exception($name . ' is not found');
       }
       return;
     }
-    self::validateMaximum($value, $name, $maximum, $exclusiveMaximum);
-    self::validateMinimum($value, $name, $minimum, $exclusiveMinimum);
-    self::validateMultipleOf($value, $name, $multipleOf);
+    if (!is_float($parsed)) {
+      throw new Exception($name . ' is not a float');
+    }
+    self::validateMaximum($parsed, $name, $maximum, $exclusiveMaximum);
+    self::validateMinimum($parsed, $name, $minimum, $exclusiveMinimum);
+    self::validateMultipleOf($parsed, $name, $multipleOf);
+  }
+
+  public static function create(mixed $parsed): ?float {
+    if ($parsed === null) {
+      return null;
+    }
+    return floatval($parsed);
   }
 
   /**

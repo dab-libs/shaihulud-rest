@@ -1,0 +1,65 @@
+{% for schemaEntry in components.schemas %}
+{%   set type = schemaEntry.key | upperCaseFirst %}
+{%   set objectSchema = schemaEntry.value %}
+{{   writeFile(controllerFolder ~ SEPARATOR ~ type ~ 'Operations.php') }}
+<?php declare(strict_types=1);
+
+
+namespace {{ controllerNamespace }};
+
+use Exception;
+use {{ apiNamespace ~ BACK_SLASH ~ type }};
+
+class {{ type }}Operations {
+
+  /**
+   * @param string|null $value
+   * @return mixed
+   */
+  public static function parse(?string $value): mixed {
+    if ($value === null) {
+      return null;
+    }
+    return json_decode($value);
+  }
+
+  /**
+   * @param mixed $parsed
+   * @param string $name
+   * @param bool $required
+   * @return void
+   * @throws Exception
+   */
+  public static function validate(mixed $parsed, string $name, bool $required): void {
+    if ($parsed === null) {
+      if ($required === true) {
+        throw new Exception($name . ' is not found');
+      }
+    }
+    if (!is_object($parsed)) {
+      throw new Exception($name . ' is not an object');
+    }
+{%   for propertyEntry in objectSchema.properties %}
+{%     set propertyName = propertyEntry.key %}
+{%     set propertySchema = propertyEntry.value %}
+{%     set required = objectSchema.required contains propertyName %}
+    {{ operationsType(propertySchema, propertyName, type) }}::validate(parsed: property_exists($parsed, '{{ propertyName }}') ? $parsed->{{ propertyName }} : null, name: '{{ propertyName }}', {{ typeOptions(propertyName, required, propertySchema, components.schemas) }});
+{%   endfor %}
+  }
+
+  public static function create(mixed $parsed): ?{{ type }} {
+    if ($parsed === null) {
+      return null;
+    }
+    return new SampleObject(
+{%   for propertyEntry in objectSchema.properties %}
+{%     set propertyName = propertyEntry.key %}
+{%     set propertySchema = propertyEntry.value %}
+{%     set required = objectSchema.required contains propertyName %}
+      {{ operationsType(propertySchema, propertyName, type) }}::create(parsed: property_exists($parsed, '{{ propertyName }}') ? $parsed->{{ propertyName }} : null{{ arrayItemCreator(propertySchema) }}),
+{%   endfor %}
+    );
+  }
+
+}
+{% endfor %}

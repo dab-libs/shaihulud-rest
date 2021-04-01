@@ -1,32 +1,24 @@
 {{ writeFile(controllerFolder ~ SEPARATOR ~ 'IntOperations.php') }}
 <?php declare(strict_types=1);
 
-
 namespace {{ controllerNamespace }};
-
 
 use Exception;
 
 class IntOperations {
   /**
    * @param ?string $value
-   * @param string $name
-   * @return int|null
-   * @throws Exception
+   * @return mixed
    */
-  public static function parse(?string $value, string $name): ?int {
+  public static function parse(?string $value): mixed {
     if ($value === null) {
       return null;
     }
-    $parsed= json_decode($value);
-    if (!is_int($parsed)) {
-      throw new Exception($name . ' is not a int');
-    }
-    return $parsed;
+    return json_decode($value);
   }
 
   /**
-   * @param int|null $value
+   * @param mixed $parsed
    * @param string $name
    * @param bool $required
    * @param int|null $maximum
@@ -37,19 +29,29 @@ class IntOperations {
    * @return void
    * @throws Exception
    */
-  public static function validate(?int $value, string $name, bool $required,
+  public static function validate(mixed $parsed, string $name, bool $required,
                                   ?int $maximum, bool $exclusiveMaximum,
                                   ?int $minimum, bool $exclusiveMinimum,
                                   ?float $multipleOf): void {
-    if ($value === null) {
+    if ($parsed === null) {
       if ($required === true) {
         throw new Exception($name . ' is not found');
       }
       return;
     }
-    self::validateMaximum($value, $name, $maximum, $exclusiveMaximum);
-    self::validateMinimum($value, $name, $minimum, $exclusiveMinimum);
-    self::validateMultipleOf($value, $name, $multipleOf);
+    if (!is_int($parsed)) {
+      throw new Exception($name . ' is not a int');
+    }
+    self::validateMaximum($parsed, $name, $maximum, $exclusiveMaximum);
+    self::validateMinimum($parsed, $name, $minimum, $exclusiveMinimum);
+    self::validateMultipleOf($parsed, $name, $multipleOf);
+  }
+
+  public static function create(mixed $parsed): ?int {
+    if ($parsed === null) {
+      return null;
+    }
+    return intval($parsed);
   }
 
   /**
