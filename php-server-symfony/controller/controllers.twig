@@ -17,6 +17,15 @@ use Exception;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
 use {{ apiNamespace ~ BACK_SLASH ~ actionType }};
+{%     for responseEntry in request.responses %}
+{%       set statusCode = responseEntry.key %}
+{%       set response = responseEntry.value %}
+{%       if response.content != null and response.content['application/json'] == null %}
+{{         halt('Can not be generated code. ' ~ request.operationId ~ '.responses.' ~ statusCode ~ '.content is not \'application/json\'') }}
+{%       endif %}
+{%       set resultType = resultType(request, statusCode) %}
+use {{ apiNamespace ~ BACK_SLASH ~ resultType }};
+{%     endfor %}
 
 class {{ controllerType }} {
   private {{ actionType }} $action;
@@ -44,7 +53,7 @@ class {{ controllerType }} {
       $body = {{ operationsType(schema, 'body', request.operationId) }}::create($bodyDecoded{{ arrayItemCreator(schema) }});
 {%     endif %}
 
-      $listPetsResponse = $this->action->{{ method }}(
+      $result = $this->action->{{ method }}(
 {%     for parameter in request.parameters %}
         ${{ parameter.name }},
 {%     endfor %}
@@ -54,10 +63,56 @@ class {{ controllerType }} {
       );
     }
     catch (Exception $exception) {
-      $listPetsResponse = $this->action->createExceptedResult($exception);
+      $result = $this->action->createExceptedResult($exception);
     }
 
-    return ListPetsResultOperations::createResponse($listPetsResponse);
+{%     for responseEntry in request.responses %}
+{%       set statusCode = responseEntry.key %}
+{%       set response = responseEntry.value %}
+{%       if response.content != null and response.content['application/json'] == null %}
+{{         halt('Can not be generated code. ' ~ request.operationId ~ '.responses.' ~ statusCode ~ '.content is not \'application/json\'') }}
+{%       endif %}
+{%       set resultType = resultType(request, statusCode) %}
+{%       if statusCode != 'default' %}
+    if ($result instanceof {{ resultType }}) {
+      return new Response(json_encode($result->content), {{ statusCode }}, [
+{%         for headerEntry in response.headers %}
+{%           set headerName = headerEntry.key %}
+{%           set headerFieldName = headerEntry.key | camelCase %}
+{%           set header = headerEntry.value %}
+{%           set headerType = type(header.schema, headerFieldName, headersType) %}
+{%           set nullable = header.required ? '' : '?' %}
+        '{{ headerName }}' => json_encode($result->headers->{{ headerFieldName }}),
+{%         endfor %}
+      ]);
+    }
+{%       endif %}
+{%     endfor %}
+
+{%     for responseEntry in request.responses %}
+{%       set statusCode = responseEntry.key %}
+{%       set response = responseEntry.value %}
+{%       if response.content != null and response.content['application/json'] == null %}
+{{         halt('Can not be generated code. ' ~ request.operationId ~ '.responses.' ~ statusCode ~ '.content is not \'application/json\'') }}
+{%       endif %}
+{%       set resultType = resultType(request, statusCode) %}
+{%       if statusCode == 'default' %}
+    if ($result instanceof {{ resultType }}) {
+      return new Response(json_encode($result->content), $result->statusCode, [
+{%         for headerEntry in response.headers %}
+{%           set headerName = headerEntry.key %}
+{%           set headerFieldName = headerEntry.key | camelCase %}
+{%           set header = headerEntry.value %}
+{%           set headerType = type(header.schema, headerFieldName, headersType) %}
+{%           set nullable = header.required ? '' : '?' %}
+        '{{ headerName }}' => json_encode($result->headers->{{ headerFieldName }}),
+{%         endfor %}
+      ]);
+    }
+{%       endif %}
+{%     endfor %}
+
+    return new Response('', 500);
   }
 
   private function getRequestParameter(Request $request, string $name, string $in): ?string {

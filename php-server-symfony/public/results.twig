@@ -17,7 +17,9 @@ namespace {{ apiNamespace }};
 
 class {{ resultType }} {
   public function __construct(
+{%       if statusCode == 'default' %}
     public int $statusCode,
+{%       endif %}
 {%       if response.headers != null %}
     public {{ headersType(request, statusCode) }} $headers,
 {%       endif %}
