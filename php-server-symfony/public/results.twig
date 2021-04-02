@@ -1,0 +1,32 @@
+{% for pathsByRouteEntry in paths %}
+{%   set route = pathsByRouteEntry.key %}
+{%   set requestsByMethod = pathsByRouteEntry.value %}
+{%   for requestsByMethodEntry in requestsByMethod %}
+{%     set request = requestsByMethodEntry.value %}
+{%     for responseEntry in request.responses %}
+{%       set statusCode = responseEntry.key %}
+{%       set response = responseEntry.value %}
+{%       if response.content != null and response.content['application/json'] == null %}
+{{         halt('Can not be generated code. ' ~ request.operationId ~ '.responses.' ~ statusCode ~ '.content is not \'application/json\'') }}
+{%       endif %}
+{%       set resultType = resultType(request, statusCode) %}
+{{       writeFile(apiFolder ~ SEPARATOR ~ resultType ~ '.php') }}
+<?php declare(strict_types=1);
+
+namespace {{ apiNamespace }};
+
+class {{ resultType }} {
+  public function __construct(
+    public int $statusCode,
+{%       if response.headers != null %}
+    public {{ headersType(request, statusCode) }} $headers,
+{%       endif %}
+{%       if response.content != null %}
+    public {{ type(response.content['application/json'].schema, 'content', resultType) }} $content,
+{%       endif %}
+  ) {
+  }
+}
+{%     endfor %}
+{%   endfor %}
+{% endfor %}

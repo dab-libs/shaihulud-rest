@@ -1,19 +1,19 @@
 {% for schemaEntry in components.schemas %}
-{%   set type = schemaEntry.key | upperCaseFirst %}
+{%   set objectType = schemaEntry.key | upperCaseFirst %}
 {%   set objectSchema = schemaEntry.value %}
-{{   writeFile(apiFolder ~ SEPARATOR ~ type ~ '.php') }}
+{{   writeFile(apiFolder ~ SEPARATOR ~ objectType ~ '.php') }}
 <?php declare(strict_types=1);
 
 namespace {{ apiNamespace }};
 
 use Exception;
 
-class {{ type }} {
+class {{ objectType }} {
   public function __construct(
 {%   for propertyEntry in objectSchema.properties %}
 {%     set propertyName = propertyEntry.key %}
 {%     set propertySchema = propertyEntry.value %}
-{%     set propertyType = type(propertySchema, propertyName, type) %}
+{%     set propertyType = type(propertySchema, propertyName, objectType) %}
 {%     set nullable = objectSchema.required contains propertyName ? '' : '?' %}
     public {{ nullable }}{{ propertyType }} ${{ propertyName }},
 {%   endfor %}

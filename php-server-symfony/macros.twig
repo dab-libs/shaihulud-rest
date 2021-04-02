@@ -1,5 +1,5 @@
 {% macro actionType(request) %}
-{{   request.operationId|pascalCase ~ 'ActionInterface' }}
+{{   request.operationId|pascalCase ~ 'Action' }}
 {% endmacro %}
 
 {% macro controllerType(request) %}
@@ -8,6 +8,14 @@
 
 {% macro methodName(request) %}
 {{   request.operationId }}
+{% endmacro %}
+
+{% macro resultType(request, statusCode) %}
+{{   request.operationId|pascalCase ~ 'Result' ~ (statusCode | upperCaseFirst) }}
+{% endmacro %}
+
+{% macro headersType(request, statusCode) %}
+{{   request.operationId|pascalCase ~ 'Headers' ~ (statusCode | upperCaseFirst) }}
 {% endmacro %}
 
 {% macro type(schema, name, parentName) %}
@@ -70,7 +78,7 @@ required: {{ literal(required) }}
 required: {{ literal(required) }}
 , minItems: {{ literal(schema.minItems) }}
 , maxItems: {{ literal(schema.maxItems) }}
-, validateItem: fn(?{{ type }} $parsed, string $name) => {{ operationsType(schema.items, 'item', name) }}::validate(parsed: $parsed, name: $name, {{ typeOptions(name ~ 'Item', true, schema.items) }}){% endmacro %}
+, validateItem: fn(?{{ type }} $decoded, string $name) => {{ operationsType(schema.items, 'item', name) }}::validate(decoded: $decoded, name: $name, {{ typeOptions(name ~ 'Item', true, schema.items) }}){% endmacro %}
 
 {% macro objectOptions(required, schema) %}
 required: {{ literal(required) }}
@@ -105,6 +113,6 @@ required: {{ literal(required) }}
 
 {% macro arrayItemCreator(schema) %}
 {%   if schema.type == 'array' %}
-, fn(mixed $parsed) => {{ operationsType(schema.items, 'item', name) }}::create($parsed){% endif %}
+, fn(mixed $decoded) => {{ operationsType(schema.items, 'item', name) }}::create($decoded){% endif %}
 {% endmacro %}
 
