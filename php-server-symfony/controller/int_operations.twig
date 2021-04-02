@@ -10,7 +10,7 @@ class IntOperations {
    * @param ?string $value
    * @return mixed
    */
-  public static function parse(?string $value): mixed {
+  public static function decode(?string $value): mixed {
     if ($value === null) {
       return null;
     }
@@ -18,7 +18,7 @@ class IntOperations {
   }
 
   /**
-   * @param mixed $parsed
+   * @param mixed $decoded
    * @param string $name
    * @param bool $required
    * @param int|null $maximum
@@ -29,29 +29,29 @@ class IntOperations {
    * @return void
    * @throws Exception
    */
-  public static function validate(mixed $parsed, string $name, bool $required,
+  public static function validate(mixed $decoded, string $name, bool $required,
                                   ?int $maximum, bool $exclusiveMaximum,
                                   ?int $minimum, bool $exclusiveMinimum,
                                   ?float $multipleOf): void {
-    if ($parsed === null) {
+    if ($decoded === null) {
       if ($required === true) {
         throw new Exception($name . ' is not found');
       }
       return;
     }
-    if (!is_int($parsed)) {
+    if (!is_int($decoded)) {
       throw new Exception($name . ' is not a int');
     }
-    self::validateMaximum($parsed, $name, $maximum, $exclusiveMaximum);
-    self::validateMinimum($parsed, $name, $minimum, $exclusiveMinimum);
-    self::validateMultipleOf($parsed, $name, $multipleOf);
+    self::validateMaximum($decoded, $name, $maximum, $exclusiveMaximum);
+    self::validateMinimum($decoded, $name, $minimum, $exclusiveMinimum);
+    self::validateMultipleOf($decoded, $name, $multipleOf);
   }
 
-  public static function create(mixed $parsed): ?int {
-    if ($parsed === null) {
+  public static function create(mixed $decoded): ?int {
+    if ($decoded === null) {
       return null;
     }
-    return intval($parsed);
+    return intval($decoded);
   }
 
   /**

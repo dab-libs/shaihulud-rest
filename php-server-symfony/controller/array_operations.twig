@@ -12,7 +12,7 @@ class ArrayOperations {
    * @param ?string $value
    * @return mixed
    */
-  public static function parse(?string $value): mixed {
+  public static function decode(?string $value): mixed {
     if ($value === null) {
       return null;
     }
@@ -20,7 +20,7 @@ class ArrayOperations {
   }
 
   /**
-   * @param array|null $parsed
+   * @param array|null $decoded
    * @param string $name
    * @param bool $required
    * @param int $minItems
@@ -29,30 +29,30 @@ class ArrayOperations {
    * @return void
    * @throws Exception
    */
-  public static function validate(?array $parsed, string $name, bool $required,
+  public static function validate(?array $decoded, string $name, bool $required,
                                   int $minItems, ?int $maxItems,
                                   callable $validateItem): void {
-    if ($parsed === null) {
+    if ($decoded === null) {
       if ($required === true) {
         throw new Exception($name . ' is not found');
       }
     }
 
-    if (!is_array($parsed)) {
+    if (!is_array($decoded)) {
       throw new Exception($name . ' is not a array');
     }
 
-    self::validateMinItems($parsed, $name, $minItems);
-    self::validateMaxItems($parsed, $name, $maxItems);
-    self::validateItems($parsed, $name, $validateItem);
+    self::validateMinItems($decoded, $name, $minItems);
+    self::validateMaxItems($decoded, $name, $maxItems);
+    self::validateItems($decoded, $name, $validateItem);
   }
 
-  public static function create(mixed $parsed, callable $createItem): ?array {
-    if ($parsed === null) {
+  public static function create(mixed $decoded, callable $createItem): ?array {
+    if ($decoded === null) {
       return null;
     }
     $array = [];
-    foreach ($parsed as $item) {
+    foreach ($decoded as $item) {
       $array[] = $createItem($item);
     }
     return $array;

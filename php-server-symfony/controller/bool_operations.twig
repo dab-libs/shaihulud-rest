@@ -10,7 +10,7 @@ class BoolOperations {
    * @param ?string $value
    * @return mixed
    */
-  public static function parse(?string $value): mixed {
+  public static function decode(?string $value): mixed {
     if ($value === null) {
       return null;
     }
@@ -18,27 +18,27 @@ class BoolOperations {
   }
 
   /**
-   * @param mixed $parsed
+   * @param mixed $decoded
    * @param string $name
    * @param bool $required
    * @return void
    * @throws Exception
    */
-  public static function validate(mixed $parsed, string $name, bool $required): void {
-    if ($parsed === null) {
+  public static function validate(mixed $decoded, string $name, bool $required): void {
+    if ($decoded === null) {
       if ($required === true) {
         throw new Exception($name . ' is not found');
       }
     }
-    if (!is_bool($parsed)) {
+    if (!is_bool($decoded)) {
       throw new Exception($name . ' is not a bool');
     }
   }
 
-  public static function create(mixed $parsed): ?bool {
-    if ($parsed === null) {
+  public static function create(mixed $decoded): ?bool {
+    if ($decoded === null) {
       return null;
     }
-    return boolval($parsed);
+    return boolval($decoded);
   }
 }

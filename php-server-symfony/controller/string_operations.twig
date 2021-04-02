@@ -12,12 +12,12 @@ class StringOperations {
    * @param ?string $value
    * @return mixed
    */
-  public static function parse(?string $value): mixed {
+  public static function decode(?string $value): mixed {
     return $value;
   }
 
   /**
-   * @param mixed $parsed
+   * @param mixed $decoded
    * @param string $name
    * @param bool $required
    * @param int $minLength
@@ -25,25 +25,25 @@ class StringOperations {
    * @return void
    * @throws Exception
    */
-  public static function validate(mixed $parsed, string $name, bool $required, int $minLength, ?int $maxLength): void {
-    if ($parsed === null) {
+  public static function validate(mixed $decoded, string $name, bool $required, int $minLength, ?int $maxLength): void {
+    if ($decoded === null) {
       if ($required) {
         throw new Exception($name . ' is not found');
       }
       return;
     }
-    if (!is_string($parsed)) {
+    if (!is_string($decoded)) {
       throw new Exception($name . ' is not a float');
     }
-    self::validateMaxLength($parsed, $name, $maxLength);
-    self::validateMinLength($parsed, $name, $minLength);
+    self::validateMaxLength($decoded, $name, $maxLength);
+    self::validateMinLength($decoded, $name, $minLength);
   }
 
-  public static function create(mixed $parsed): ?string {
-    if ($parsed === null) {
+  public static function create(mixed $decoded): ?string {
+    if ($decoded === null) {
       return null;
     }
-    return strval($parsed);
+    return strval($decoded);
   }
 
   /**

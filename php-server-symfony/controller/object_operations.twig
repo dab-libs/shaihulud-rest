@@ -16,7 +16,7 @@ class {{ type }}Operations {
    * @param string|null $value
    * @return mixed
    */
-  public static function parse(?string $value): mixed {
+  public static function decode(?string $value): mixed {
     if ($value === null) {
       return null;
     }
@@ -24,31 +24,31 @@ class {{ type }}Operations {
   }
 
   /**
-   * @param mixed $parsed
+   * @param mixed $decoded
    * @param string $name
    * @param bool $required
    * @return void
    * @throws Exception
    */
-  public static function validate(mixed $parsed, string $name, bool $required): void {
-    if ($parsed === null) {
+  public static function validate(mixed $decoded, string $name, bool $required): void {
+    if ($decoded === null) {
       if ($required === true) {
         throw new Exception($name . ' is not found');
       }
     }
-    if (!is_object($parsed)) {
+    if (!is_object($decoded)) {
       throw new Exception($name . ' is not an object');
     }
 {%   for propertyEntry in objectSchema.properties %}
 {%     set propertyName = propertyEntry.key %}
 {%     set propertySchema = propertyEntry.value %}
 {%     set required = objectSchema.required contains propertyName %}
-    {{ operationsType(propertySchema, propertyName, type) }}::validate(parsed: property_exists($parsed, '{{ propertyName }}') ? $parsed->{{ propertyName }} : null, name: '{{ propertyName }}', {{ typeOptions(propertyName, required, propertySchema, components.schemas) }});
+    {{ operationsType(propertySchema, propertyName, type) }}::validate(decoded: property_exists($decoded, '{{ propertyName }}') ? $decoded->{{ propertyName }} : null, name: '{{ propertyName }}', {{ typeOptions(propertyName, required, propertySchema, components.schemas) }});
 {%   endfor %}
   }
 
-  public static function create(mixed $parsed): ?{{ type }} {
-    if ($parsed === null) {
+  public static function create(mixed $decoded): ?{{ type }} {
+    if ($decoded === null) {
       return null;
     }
     return new SampleObject(
@@ -56,7 +56,7 @@ class {{ type }}Operations {
 {%     set propertyName = propertyEntry.key %}
 {%     set propertySchema = propertyEntry.value %}
 {%     set required = objectSchema.required contains propertyName %}
-      {{ operationsType(propertySchema, propertyName, type) }}::create(parsed: property_exists($parsed, '{{ propertyName }}') ? $parsed->{{ propertyName }} : null{{ arrayItemCreator(propertySchema) }}),
+      {{ operationsType(propertySchema, propertyName, type) }}::create(decoded: property_exists($decoded, '{{ propertyName }}') ? $decoded->{{ propertyName }} : null{{ arrayItemCreator(propertySchema) }}),
 {%   endfor %}
     );
   }
