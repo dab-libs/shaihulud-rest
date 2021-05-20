@@ -1,0 +1,50 @@
+{
+    "type": "project",
+    "name": "yoso/sprutbillingapi",
+    "description": "SprutBillingApi",
+    "license": "proprietary",
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "require": {
+        "php": ">=7.3",
+        "ext-ctype": "*",
+        "ext-iconv": "*",
+        "ext-json": "*",
+        "guzzlehttp/guzzle": "7.0",
+        "guzzlehttp/uri-template": "^0.2.0"
+    },
+    "require-dev": {
+    },
+    "config": {
+        "optimize-autoloader": true,
+        "preferred-install": {
+            "*": "dist"
+        },
+        "sort-packages": true
+    },
+    "autoload": {
+        "psr-4": {
+            "SprutBillingApi\\": "src/php-client-pure/SprutBillingApi"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+        }
+    },
+    "replace": {
+    },
+    "scripts": {
+        "auto-scripts": {
+        },
+        "post-install-cmd": [
+            "@auto-scripts"
+        ],
+        "post-update-cmd": [
+            "@auto-scripts"
+        ]
+    },
+    "conflict": {
+    },
+    "extra": {
+    }
+}
