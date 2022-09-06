@@ -76,6 +76,7 @@ class {{ controllerType }} {
 {%       if statusCode != 'default' %}
     if ($result instanceof {{ resultType }}) {
       return new Response(json_encode($result->content), {{ statusCode }}, [
+        'Content-Type' => 'application/json',
 {%         for headerEntry in response.headers %}
 {%           set headerName = headerEntry.key %}
 {%           set headerFieldName = headerEntry.key | camelCase %}
@@ -99,6 +100,7 @@ class {{ controllerType }} {
 {%       if statusCode == 'default' %}
     if ($result instanceof {{ resultType }}) {
       return new Response(json_encode($result->content), $result->statusCode, [
+        'Content-Type' => 'application/json',
 {%         for headerEntry in response.headers %}
 {%           set headerName = headerEntry.key %}
 {%           set headerFieldName = headerEntry.key | camelCase %}
