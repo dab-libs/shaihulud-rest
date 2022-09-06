@@ -1,0 +1,84 @@
+{% macro result(request) %}
+{%   for responseEntry in request.responses %}
+{%     set statusCode = responseEntry.key %}
+{{ resultType(request, statusCode) }}{% if not loop.last %} | {% endif %}
+{%   endfor %}
+{% endmacro %}
+
+{% macro mapParameters(parameters, parameterIn, parrent) %}
+    ${{ parameterIn}} = [
+{%     for parameter in parameters %}
+{%         if parameter['in'] == parameterIn %}
+{%             set operationsType = operationsType(parameter.schema, parameter.name, parrent) %}
+      '{{ parameter.name }}' => {{ operationsType }}::encodeSimple(${{ parameter.name }}),
+{%         endif %}
+{%     endfor %}
+    ];
+{% endmacro %}
+
+{% macro mapSecurityParamDocs(security, securitySchemes) %}
+{%   for securitySchemeNames in security %}
+{%     for entry in securitySchemeNames %}
+{%       set securityScheme = securitySchemes[entry.key] %}
+{%       if securityScheme != null %}
+{%         if securityScheme.type == 'apiKey' %}
+   * @var string ${{ securityScheme.name | camelCase }};
+{%         endif %}
+{%       endif %}
+{%     endfor %}
+{%   endfor %}
+{% endmacro %}
+
+{% macro mapSecurityParams(security, securitySchemes) %}
+{%   for securitySchemeNames in security %}
+{%     for entry in securitySchemeNames %}
+{%       set securityScheme = securitySchemes[entry.key] %}
+{%       if securityScheme != null %}
+{%         if securityScheme.type == 'apiKey' %}
+, ${{ securityScheme.name | camelCase }}
+{%         endif %}
+{%       endif %}
+{%     endfor %}
+{%   endfor %}
+{% endmacro %}
+
+{% macro mapSecurityParamAssigns(security, securitySchemes) %}
+{%   for securitySchemeNames in security %}
+{%     for entry in securitySchemeNames %}
+{%       set securityScheme = securitySchemes[entry.key] %}
+{%       if securityScheme != null %}
+{%         if securityScheme.type == 'apiKey' %}
+    $this->{{ securityScheme.name | camelCase }} = ${{ securityScheme.name | camelCase }};
+{%         endif %}
+{%       endif %}
+{%     endfor %}
+{%   endfor %}
+{% endmacro %}
+
+{% macro mapSecurityFields(security, securitySchemes) %}
+{%   for securitySchemeNames in security %}
+{%     for entry in securitySchemeNames %}
+{%       set securityScheme = securitySchemes[entry.key] %}
+{%       if securityScheme != null %}
+{%         if securityScheme.type == 'apiKey' %}
+  /** @var string */
+  private ${{ securityScheme.name | camelCase }};
+
+{%         endif %}
+{%       endif %}
+{%     endfor %}
+{%   endfor %}
+{% endmacro %}
+
+{% macro mapSecurity(security, securitySchemes) %}
+{%   for securitySchemeNames in security %}
+{%     for entry in securitySchemeNames %}
+{%       set securityScheme = securitySchemes[entry.key] %}
+{%       if securityScheme != null %}
+{%         if securityScheme.type == 'apiKey' %}
+    ${{ securityScheme['in'] }}['{{ securityScheme.name }}'] = $this->{{ securityScheme.name | camelCase }};
+{%         endif %}
+{%       endif %}
+{%     endfor %}
+{%   endfor %}
+{% endmacro %}

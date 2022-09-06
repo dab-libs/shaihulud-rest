@@ -1,0 +1,159 @@
+{{ writeFile(typeOperationFolder ~ 'IntOperations.php') }}
+<?php declare(strict_types=1);
+
+namespace {{ typeOperationNamespace }};
+
+use Exception;
+
+class IntOperations {
+  /**
+   * @param string|null $value
+   * @return mixed
+   */
+  public static function decodeJson(?string $value): mixed {
+    if ($value === null) {
+      return null;
+    }
+    return json_decode($value);
+  }
+
+  /**
+   * @param int|null $value
+   * @return string|null
+   */
+  public static function encodeJson(?int $value): ?string {
+    if ($value === null) {
+      return null;
+    }
+    return json_encode($value);
+  }
+
+  /**
+   * @param string|null $value
+   * @return mixed
+   */
+  public static function decodeSimple(?string $value): mixed {
+    if ($value === null) {
+      return null;
+    }
+    $jsonDecoded = json_decode($value);
+    if ($jsonDecoded === null) {
+      return $item;
+    }
+    else {
+      return $jsonDecoded;
+    }
+  }
+
+  /**
+   * @param int|null $value
+   * @return string|null
+   */
+  public static function encodeSimple(?int $value): ?string {
+    if ($value === null) {
+      return null;
+    }
+    return (string) $value;
+  }
+
+  /**
+   * @param mixed $decoded
+   * @param string $name
+   * @param bool $required
+   * @param int|null $maximum
+   * @param bool $exclusiveMaximum
+   * @param int|null $minimum
+   * @param bool $exclusiveMinimum
+   * @param float|null $multipleOf
+   * @return void
+   * @throws Exception
+   */
+  public static function validate($decoded, $name, $required, $maximum, $exclusiveMaximum, $minimum, $exclusiveMinimum,
+                                  $multipleOf) {
+    if ($decoded === null) {
+      if ($required === true) {
+        throw new Exception($name . ' is not found');
+      }
+      return;
+    }
+    if (!is_int($decoded)) {
+      throw new Exception($name . ' is not a int');
+    }
+    self::validateMaximum($decoded, $name, $maximum, $exclusiveMaximum);
+    self::validateMinimum($decoded, $name, $minimum, $exclusiveMinimum);
+    self::validateMultipleOf($decoded, $name, $multipleOf);
+  }
+
+  public static function createForTest() {
+    return 1;
+  }
+
+  public static function create($decoded) {
+    if ($decoded === null) {
+      return null;
+    }
+    return intval($decoded);
+  }
+
+  /**
+   * @param int $value
+   * @param string $name
+   * @param float|null $maximum
+   * @param bool $exclusiveMaximum
+   * @throws Exception
+   */
+  private static function validateMaximum($value, $name, $maximum, $exclusiveMaximum) {
+    if ($maximum === null) {
+      return;
+    }
+    if ($exclusiveMaximum) {
+      if ($value >= $maximum) {
+        throw new Exception($name . ' is great or equal then ' . $maximum);
+      }
+    }
+    else {
+      if ($value > $maximum) {
+        throw new Exception($name . ' is great then ' . $maximum);
+      }
+    }
+  }
+
+  /**
+   * @param int $value
+   * @param string $name
+   * @param float|null $minimum
+   * @param bool $exclusiveMinimum
+   * @throws Exception
+   */
+  private static function validateMinimum($value, $name, $minimum, $exclusiveMinimum) {
+    if ($minimum === null) {
+      return;
+    }
+    if ($exclusiveMinimum) {
+      if ($value <= $minimum) {
+        throw new Exception($name . ' is little or equal then ' . $minimum);
+      }
+    }
+    else {
+      if ($value < $minimum) {
+        throw new Exception($name . ' is little then ' . $minimum);
+      }
+    }
+  }
+
+  /**
+   * @param int $value
+   * @param string $name
+   * @param float|null $multipleOf
+   * @return void
+   * @throws Exception
+   */
+  private static function validateMultipleOf($value, $name, $multipleOf) {
+    if ($multipleOf === null) {
+      return;
+    }
+    if ($value % $multipleOf !== null) {
+      throw new Exception($name . ' is not multiple of ' . $multipleOf);
+    }
+  }
+}

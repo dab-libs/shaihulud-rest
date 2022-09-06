@@ -1,0 +1,65 @@
+{% macro result(request) %}
+{%   for responseEntry in request.responses %}
+{%     set statusCode = responseEntry.key %}
+{{ resultType(request, statusCode) }}{% if not loop.last %} | {% endif %}
+{%   endfor %}
+{% endmacro %}
+{#  #}
+{% for pathsByRouteEntry in paths %}
+{%     set route = pathsByRouteEntry.key %}
+{%     set requestsByMethod = pathsByRouteEntry.value %}
+{%     for requestsByMethodEntry in requestsByMethod %}
+{%         set request = requestsByMethodEntry.value %}
+{%         set actionType = actionType(request) %}
+{%         set method = methodName(request) %}
+{{        writeFile(publicFolder ~ actionType ~ '.php') }}
+<?php declare(strict_types=1);
+
+namespace {{ publicNamespace }};
+
+use Exception;
+
+interface {{ actionType }} {
+  /**
+   * {{ request.summary }}
+
+{%          for parameter in request.parameters %}
+{%              set type = type(parameter.schema, parameter.name, request.operationId, true) %}
+{%              set nullable = parameter.required ? '' : '|null' %}
+   * @param {{ type }}{{ nullable }} ${{ parameter.name }} {{ parameter.description }}
+
+{%          endfor %}
+{%          if request contains 'requestBody' %}
+{%            if request.requestBody.content['application/json'] == null %}
+{{              halt('Can not be generated code for content is not \'application/json\'') }}
+{%            endif %}
+{%            set schema = request.requestBody.content['application/json'].schema %}
+{%            set type = type(schema, 'body', request.operationId) %}
+   * @param {{ type }} $body
+{%          endif %}
+   * @return {{ result(request) }}
+
+   * @throws Exception
+   */
+  public function {{ method }}(
+{%          for parameter in request.parameters %}
+{%              set type = type(parameter.schema, parameter.name, request.operationId) %}
+{%              set nullable = parameter.required ? '' : '?' %}
+    {{ nullable }}{{ type }} ${{ parameter.name }},
+{%          endfor %}
+{%          if request contains 'requestBody' %}
+{%            if request.requestBody.content['application/json'] == null %}
+{{              halt('Can not be generated code for content is not \'application/json\'') }}
+{%            endif %}
+{%            set scheme = request.requestBody.content['application/json'].schema %}
+{%            set type = type(schema, 'body', request.operationId) %}
+    {{ type }} $body,
+{%          endif %}
+  ): {{ result(request) }};
+
+  public function createExceptedResult(
+    Exception $exception
+  ): {{ result(request) }};
+}
+{%     endfor %}
+{% endfor %}

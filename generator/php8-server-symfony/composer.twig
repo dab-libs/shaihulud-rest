@@ -1,0 +1,23 @@
+{{writeFile(rootFolder  ~ 'composer.json') }}
+{
+    "name": "{{ vendor }}/{{ package }}",
+    "version": "{{ info.version }}",
+    "type": "symfony-bundle",
+    "authors": [
+        {
+            "name": "{{ info.contact.name }}",
+            "email": "{{ info.contact.email }}"
+        }
+    ],
+    "require": {
+        "php": ">=8.0",
+        "ext-json": "*",
+        "symfony/framework-bundle": "5.2.*"
+    },
+    "autoload": {
+        "psr-4": {
+            "{{ bundleNamespace | escapeSlashes }}\\" : "{{ bundleFolder }}",
+            "{{ namespace | escapeSlashes }}\\" : "{{ srcFolder }}"
+        }
+    }
+}

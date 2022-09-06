@@ -1,0 +1,21 @@
+{{   writeFile(configFolder ~ 'services.yaml') }}
+services:
+  # default configuration for services in *this* file
+  _defaults:
+    autowire: true      # Automatically injects dependencies in your services.
+    autoconfigure: true # Automatically registers your services as commands, event subscribers, etc.
+
+{% for pathsByRouteEntry in paths %}
+{%   set route = pathsByRouteEntry.key %}
+{%   set requestsByMethod = pathsByRouteEntry.value %}
+{%   for requestsByMethodEntry in requestsByMethod %}
+{%     set httpMethod = requestsByMethodEntry.key %}
+{%     set request = requestsByMethodEntry.value %}
+{%     set actionType = actionType(request) %}
+{%     set fullControllerType = controllerNamespace ~ BACK_SLASH ~ controllerType(request) %}
+{%     set methodName = methodName(request) %}
+  {{ fullControllerType }}:
+    public: true
+
+{%     endfor %}
+{% endfor %}

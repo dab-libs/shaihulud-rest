@@ -1,0 +1,88 @@
+{{ writeFile(typeOperationFolder ~ 'BoolOperations.php') }}
+<?php declare(strict_types=1);
+
+namespace {{ typeOperationNamespace }};
+
+use Exception;
+
+class BoolOperations {
+  /**
+   * @param string|null $value
+   * @return mixed
+   */
+  public static function decodeJson($value) {
+    if ($value === null) {
+      return null;
+    }
+    return json_decode($value);
+  }
+
+  /**
+   * @param bool|null $value
+   * @return string|null
+   */
+  public static function encodeJson($value) {
+    if ($value === null) {
+      return null;
+    }
+    return json_encode($value);
+  }
+
+  /**
+   * @param string|null $value
+   * @return mixed
+   */
+  public static function decodeSimple($value) {
+    if ($value === null) {
+      return null;
+    }
+    $jsonDecoded = json_decode($value);
+    if ($jsonDecoded === null) {
+      return $item;
+    }
+    else {
+      return $jsonDecoded;
+    }
+  }
+
+  /**
+   * @param bool|null $value
+   * @return string|null
+   */
+  public static function encodeSimple($value) {
+    if ($value === null) {
+      return null;
+    }
+    return ($value ? 'true' : 'false');
+  }
+
+  /**
+   * @param mixed $decoded
+   * @param string $name
+   * @param bool $required
+   * @return void
+   * @throws Exception
+   */
+  public static function validate($decoded, $name, $required) {
+    if ($decoded === null) {
+      if ($required === true) {
+        throw new Exception($name . ' is not found');
+      }
+      return;
+    }
+    if (!is_bool($decoded)) {
+      throw new Exception($name . ' is not a bool');
+    }
+  }
+
+  public static function createForTest() {
+    return true;
+  }
+
+  public static function create($decoded) {
+    if ($decoded === null) {
+      return null;
+    }
+    return boolval($decoded);
+  }
+}

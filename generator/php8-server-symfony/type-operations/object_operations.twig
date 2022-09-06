@@ -1,0 +1,123 @@
+{% for schemaEntry in components.schemas %}
+{%   set type = schemaEntry.key | upperCaseFirst %}
+{%   set objectSchema = schemaEntry.value %}
+{{   writeFile(typeOperationFolder ~ type ~ 'Operations.php') }}
+<?php declare(strict_types=1);
+
+namespace {{ typeOperationNamespace }};
+
+use Exception;
+use {{ publicNamespace ~ BACK_SLASH ~ type }};
+
+class {{ type }}Operations {
+  /**
+   * @param string|null $value
+   * @return mixed
+   */
+  public static function decodeJson(?string $value): mixed {
+    if ($value === null) {
+      return null;
+    }
+    return json_decode($value);
+  }
+
+  /**
+   * @param {{ type }}|null $value
+   * @return string|null
+   */
+  public static function encodeJson(?{{ type }} $value): ?string {
+    if ($value === null) {
+      return null;
+    }
+    return json_encode($value);
+  }
+
+  /**
+   * @param array|null $value
+   * @return object|null
+   */
+  public static function decodeSimple(?array $value): ?object {
+    if ($value === null) {
+      return null;
+    }
+    $decoded = [];
+    for ($i = 1; $i < count($value); $i += 2) {
+      $decoded[$value[$i - 1]] = json_decode($value[$i]);
+    }
+    return (object) $decoded;
+  }
+
+  /**
+   * @param {{ type }}|null $value
+   * @return array|null
+   */
+  public static function encodeSimple(?{{ type }} $value): ?array {
+    if ($value === null) {
+      return null;
+    }
+    $encoded = [];
+{%   for propertyEntry in objectSchema.properties %}
+{%     set propertyName = propertyEntry.key %}
+{%     set propertySchema = propertyEntry.value %}
+{%     set required = objectSchema.required contains propertyName %}
+    $encoded['{{ propertyName }}'] = json_encode($value->{{ propertyName }});
+{%   endfor %}
+    return $encoded;
+  }
+
+  /**
+   * @param mixed $decoded
+   * @param string $name
+   * @param bool $required
+   * @return void
+   * @throws Exception
+   */
+  public static function validate(mixed $decoded, string $name, bool $required): void {
+    if ($decoded === null) {
+      if ($required === true) {
+        throw new Exception($name . ' is not found');
+      }
+      return;
+    }
+    if (!is_object($decoded)) {
+      throw new Exception($name . ' is not an object');
+    }
+{%   for propertyEntry in objectSchema.properties | sortKeys %}
+{%     set propertyName = propertyEntry.key %}
+{%     set propertySchema = propertyEntry.value %}
+{%     set required = objectSchema.required contains propertyName %}
+    {{ operationsType(propertySchema, propertyName, type) }}::validate(decoded: property_exists($decoded, '{{ propertyName }}') ? $decoded->{{ propertyName }} : null, name: '{{ propertyName }}', {{ typeOptions(propertyName, required, propertySchema, components.schemas) }});
+{%   endfor %}
+  }
+
+  public static function createForTest() {
+    return new {{ type }}(
+{%   for propertyEntry in objectSchema.properties | sortKeys %}
+{%     set propertyName = propertyEntry.key %}
+{%     set propertySchema = propertyEntry.value %}
+{%     set required = objectSchema.required contains propertyName %}
+      {{ propertyName }}: {{ operationsType(propertySchema, propertyName, type) }}::createForTest({{ arrayItemCreateForTest(propertySchema) }}),
+{%   endfor %}
+    );
+  }
+
+    /**
+    * @param object|null $value
+    * @return {{ type }}|null
+    */
+  public static function create(?object $decoded): ?{{ type }} {
+    if ($decoded === null) {
+      return null;
+    }
+    return new {{ type }}(
+{%   for propertyEntry in objectSchema.properties | sortKeys %}
+{%     set propertyName = propertyEntry.key %}
+{%     set propertySchema = propertyEntry.value %}
+{%     set required = objectSchema.required contains propertyName %}
+    {{ propertyName }}: {{ operationsType(propertySchema, propertyName, type) }}::create(decoded: property_exists($decoded, '{{ propertyName }}') ? $decoded->{{ propertyName }} : null{{ arrayItemCreator(propertySchema) }}),
+{%   endfor %}
+    );
+  }
+
+}
+{% endfor %}

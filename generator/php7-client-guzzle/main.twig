@@ -1,0 +1,20 @@
+{% import 'main-macro.twig' %}
+{% set vendor = info.contact.name | kebabCase %}
+{% set package = (info.title | kebabCase) ~ '-php7-client' %}
+{% set apiClass = info.title | pascalCase %}
+{% set rootFolder = './' %}
+{% set namespace = info.title | pascalCase %}
+{% set publicFolder = rootFolder ~ 'Api/' %}
+{% set publicNamespace = namespace ~ BACK_SLASH ~ 'Api' %}
+{% set typeOperationFolder = rootFolder ~ 'TypeOperation/' %}
+{% set typeOperationNamespace = namespace ~ BACK_SLASH ~ 'TypeOperation' %}
+{% include 'public/api.twig' %}
+{% include 'type-operations/string_operations.twig' %}
+{% include 'type-operations/int_operations.twig' %}
+{% include 'type-operations/float_operations.twig' %}
+{% include 'type-operations/bool_operations.twig' %}
+{% include 'type-operations/array_operations.twig' %}
+{% include 'type-operations/object_operations.twig' %}
+{% include 'public/objects.twig' %}
+{% include 'public/results.twig' %}
+{% include 'composer.twig' %}

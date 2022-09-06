@@ -1,0 +1,122 @@
+{% macro apiType() %}
+{{   namespace }}
+{% endmacro %}
+
+{% macro actionType(request) %}
+{{   request.operationId|pascalCase ~ 'Action' }}
+{% endmacro %}
+
+{% macro controllerType(request) %}
+{{   request.operationId|pascalCase ~ 'Controller' }}
+{% endmacro %}
+
+{% macro methodName(request) %}
+{{   request.operationId }}
+{% endmacro %}
+
+{% macro resultType(request, statusCode) %}
+{{   request.operationId|pascalCase ~ 'Result' ~ (statusCode | upperCaseFirst) }}
+{% endmacro %}
+
+{% macro operationsResultType(request, statusCode) %}
+{{   resultType(request, statusCode) ~ 'Operations' }}
+{% endmacro %}
+
+{% macro headersType(request, statusCode) %}
+{{   request.operationId|pascalCase ~ 'Headers' ~ (statusCode | upperCaseFirst) }}
+{% endmacro %}
+
+{% macro type(schema, name, parentName, phpDoc) %}
+{%   if schema contains '$ref' %}
+{%     set typeName = schema['$ref'] | replaceAll('#/components/schemas/(\w+)', '$1') | upperCaseFirst %}
+{%   elseif schema.type == 'string' %}
+{%     set typeName = 'string' %}
+{%   elseif schema.type == 'integer' %}
+{%     set typeName = 'int' %}
+{%   elseif schema.type == 'number' %}
+{%     set typeName = 'float' %}
+{%   elseif schema.type == 'boolean' %}
+{%     set typeName = 'bool' %}
+{%   elseif schema.type == 'array' %}
+{%     if phpDoc %}
+{%       set typeName = type(schema.items, name, parentName, phpDoc) ~ '[]' %}
+{%     else %}
+{%       set typeName = 'array' %}
+{%     endif %}
+{%   elseif schema.type == 'object' %}
+{{     halt('Can be generated code for "' ~ name ~ '" in "' ~ parentName ~ '"') }}
+{%   endif %}
+{{   typeName }}
+{% endmacro %}
+
+{% macro operationsType(schema, name, parentName) %}
+{{   type(schema, name, parentName) | upperCaseFirst ~ 'Operations' }}
+{% endmacro %}
+
+{% macro literal(value) %}
+{{   value is null ? 'null' : value | quoteString("'") | raw }}
+{% endmacro %}
+
+{% macro defaultValueLiteral(schema) %}
+{%   if schema contains '$ref' %}
+{%     set value = null %}
+{%   else %}
+{%     set value = schema.default %}
+{%   endif %}
+{{   literal(value) }}
+{% endmacro %}
+
+{% macro stringOptions(required, schema) %}
+{{ literal(required) }}, {{ literal(schema.minLength) }}, {{ literal(schema.maxLength) }}
+{% endmacro %}
+
+{% macro numberOptions(required, schema) %}
+{{ literal(required) }}, {{ literal(schema.maximum) }}, {{ literal(schema.exclusiveMaximum) }}
+, {{ literal(schema.minimum) }}, {{ literal(schema.exclusiveMinimum) }}, {{ literal(schema.multipleOf) }}
+{% endmacro %}
+
+{% macro boolOptions(required, schema) %}
+{{ literal(required) }}
+{% endmacro %}
+
+{% macro arrayOptions(name, required, schema, allSchemas) %}
+{%   set type = type(schema.items, 'item', name) %}
+{{ literal(required) }}, {{ literal(schema.minItems) }}, {{ literal(schema.maxItems) }}
+, validateItem: fn(mixed $decoded, string $name) => {{ operationsType(schema.items, 'item', name) }}::validate($decoded, $name, {{ typeOptions(name ~ 'Item', true, schema.items, allSchemas) }}){% endmacro %}
+
+{% macro objectOptions(required, schema) %}
+{{ literal(required) }}
+{% endmacro %}
+
+{% macro typeOptions(name, required, schema, allSchemas) %}
+{%   if schema contains '$ref' %}
+{%     set refSchemaName = schema['$ref'] | replaceAll('#/components/schemas/(\w+)', '$1') %}
+{%     set refSchema = allSchemas[refSchemaName] %}
+{%     if refSchema contains '$ref' %}
+{{       halt('Can not be generated code for "' ~ schema['$ref'] ~ '"') }}
+{%     endif %}
+{%     if refSchema.type != 'object' %}
+{{       halt('Can not be generated code for "' ~ schema['$ref'] ~ '"') }}
+{%     endif %}
+{%     set options = objectOptions(required, schema) %}
+{%   elseif schema.type == 'string' %}
+{%     set options = stringOptions(required, schema) %}
+{%   elseif schema.type == 'integer' %}
+{%     set options = numberOptions(required, schema) %}
+{%   elseif schema.type == 'number' %}
+{%     set options = numberOptions(required, schema) %}
+{%   elseif schema.type == 'boolean' %}
+{%     set options = boolOptions(required, schema) %}
+{%   elseif schema.type == 'array' %}
+{%     set options = arrayOptions(name, required, schema, allSchemas) %}
+{%   elseif schema.type == 'object' %}
+{%     set typeName = classNameForObject %}
+{%   endif %}
+{{   options }}
+{% endmacro %}
+
+{% macro arrayItemCreator(schema) %}
+{%   if schema.type == 'array' %}
+, fn(mixed $decoded) => {{ operationsType(schema.items, 'item', name) }}::create($decoded){% endif %}
+{% endmacro %}
+

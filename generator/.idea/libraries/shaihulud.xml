@@ -1,0 +1,9 @@
+<component name="libraryTable">
+  <library name="shaihulud">
+    <CLASSES>
+      <root url="jar://$PROJECT_DIR$/shaihulud.jar!/" />
+    </CLASSES>
+    <JAVADOC />
+    <SOURCES />
+  </library>
+</component>

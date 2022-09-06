@@ -1,0 +1,99 @@
+{% for controller in controllers %}
+{{   writeFile(testFolder ~ controller.testType ~ '.php') }}
+<?php declare(strict_types=1);
+
+namespace {{ testNamespace }};
+
+use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+
+use {{ controllerNamespace }}\{{ controller.controllerType }};
+
+use {{ publicNamespace }}\{{ controller.actionType }};
+
+{%   for result in controller.results %}
+use {{ publicNamespace }}\{{ result.type }};
+{%   endfor %}
+
+{%   for importedOperationsType in controller.importedOperationsTypes %}
+use {{ typeOperationNamespace }}\{{ importedOperationsType }};
+{%   endfor %}
+
+class {{ controller.testType }} extends WebTestCase {
+  private $entityManager;
+  private $action;
+
+  protected function setUp(): void {
+    parent::setUp();
+
+    $this->client = static::createClient();
+
+    $this->apiKey = $_SERVER['TEST_API_KEY'];
+
+    $this->action = $this->createMock({{ controller.actionType }}::class);
+    static::$container->set({{ controller.actionType }}::class, $this->action);
+
+    $this->entityManager = $this->createMock(EntityManagerInterface::class);
+    $controller = static::$container->get({{ controller.controllerType }}::class);
+    $controller->setEntityManager($this->entityManager);
+  }
+
+  public function testParamValidation() {
+{%   for parameter in controller.parameters %}
+    ${{ parameter.name }} = {{ parameter.typeInfo.operationsType }}::createForTest({{ (parameter.typeInfo.arrayItem != false ? 'fn() => ' ~ parameter.typeInfo.arrayItem.operationsType ~ '::createForTest()' : '') | raw }});
+{%   endfor %}
+
+    $this->action
+      ->expects($this->once())
+      ->method('{{ controller.actionMethod }}')
+      ->with(
+{%   for parameter in controller.parameters %}
+        $this->equalTo(${{ parameter.name }}),
+{%   endfor %}
+      )
+      ->willReturn(
+        new {{ controller.results[0].type }}(
+          content: {{ controller.results[0].content.operationsType }}::createForTest(),
+{%    if controller.results[0].headersType != null %}
+          headers: new {{ controller.results[0].headersType }}(
+{%      for header in controller.results[0].headers %}
+            {{ header.fieldName }}: {{ header.typeInfo.operationsType }}::createForTest({{ (header.typeInfo.arrayItem != false ? 'fn() => ' ~ header.typeInfo.arrayItem.operationsType ~ '::createForTest()' : '') | raw }});
+{%      endfor %}
+          ),
+{%    endif %}
+        )
+      );
+
+    $url = str_replace(
+      [{% for parameter in controller.parameters %}{% if parameter.path %}{{ '\'{' ~ parameter.name ~ '}\', ' | raw }}{% endif %}{% endfor %}],
+      [{% for parameter in controller.parameters %}{% if parameter.path %}{{ '$' ~ parameter.name ~ ', ' }}{% endif %}{% endfor %}],
+      '{{ controller.route }}'
+    );
+    $query = [
+{%   for apiKeyName in apiKeysInQuery %}
+      '{{ apiKeyName }}' => $this->apiKey,
+{%   endfor %}
+{%   for parameter in controller.parameters %}
+{%     if parameter.query %}
+      '{{ parameter.name }}' => {{ parameter.typeInfo.operationsType }}::encodeSimple(${{ parameter.name }}),
+{%     endif %}
+{%   endfor %}
+    ];
+    $header = [
+{%   for apiKeyName in apiKeysInHeader %}
+      'HTTP_{{ apiKeyName | snakeCase | upper }}' => $this->apiKey,
+{%   endfor %}
+{%   for parameter in controller.parameters %}
+{%     if parameter.header %}
+      '{{ parameter.name }}' => {{ parameter.operationsType }}::encodeSimple(${{ parameter.name }}),
+{%     endif %}
+{%   endfor %}
+    ];
+    $this->client->request('{{ controller.method }}', $url, $query, [], $header);
+    $statusCode = $this->client->getResponse()->getStatusCode();
+    $this->assertNotEquals($statusCode, 400);
+    $this->assertNotEquals($statusCode, 401);
+    $this->assertNotEquals($statusCode, 404);
+  }
+}
+{% endfor %}

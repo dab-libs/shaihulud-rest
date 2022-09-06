@@ -1,0 +1,41 @@
+{% for pathsByRouteEntry in paths %}
+{%   set route = pathsByRouteEntry.key %}
+{%   set requestsByMethod = pathsByRouteEntry.value %}
+{%   for requestsByMethodEntry in requestsByMethod %}
+{%     set request = requestsByMethodEntry.value %}
+{%     for responseEntry in request.responses %}
+{%       set statusCode = responseEntry.key %}
+{%       set response = responseEntry.value %}
+{%       if response.headers != null %}
+{%         set headersType = headersType(request, statusCode) %}
+{{       writeFile(publicFolder ~ headersType ~ '.php') }}
+<?php declare(strict_types=1);
+
+namespace {{ publicNamespace }};
+
+class {{ headersType }} {
+  /**
+{%         for headerEntry in response.headers %}
+{%           set headerFieldName = headerEntry.key | camelCase %}
+{%           set header = headerEntry.value %}
+{%           set headerType = type(header.schema, headerFieldName, headersType, true) %}
+{%           set nullable = header.required ? '' : '|null' %}
+    * @param {{ headerType }}{{ nullable }} ${{ headerFieldName }} {{ header.description }}
+{%         endfor %}
+   * @param array|null $products
+   */
+  public function __construct(
+{%         for headerEntry in response.headers %}
+{%           set headerFieldName = headerEntry.key | camelCase %}
+{%           set header = headerEntry.value %}
+{%           set headerType = type(header.schema, headerFieldName, headersType) %}
+{%           set nullable = header.required ? '' : '?' %}
+    public {{ nullable }}{{ headerType }} ${{ headerFieldName }},
+{%         endfor %}
+  ) {
+  }
+}
+{%       endif %}
+{%     endfor %}
+{%   endfor %}
+{% endfor %}

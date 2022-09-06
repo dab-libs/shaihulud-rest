@@ -1,0 +1,47 @@
+{% for schemaEntry in components.schemas %}
+{%   set objectType = schemaEntry.key | upperCaseFirst %}
+{%   set objectSchema = schemaEntry.value %}
+{{   writeFile(publicFolder ~ objectType ~ '.php') }}
+<?php declare(strict_types=1);
+
+namespace {{ publicNamespace }};
+
+use Exception;
+
+/*
+ * {{ objectSchema.description }}
+
+ */
+class {{ objectType }} {
+{%   for propertyEntry in objectSchema.properties | sortKeys %}
+{%     set propertyName = propertyEntry.key %}
+{%     set propertySchema = propertyEntry.value %}
+{%     set propertyType = type(propertySchema, propertyName, objectType, true) %}
+{%     set nullable = objectSchema.required contains propertyName ? '' : '|null' %}
+  /** @var {{ propertyType }}{{ nullable }} {{ propertySchema.description }} */
+  public ${{ propertyName }};
+
+{%   endfor %}
+  /**
+{%   for propertyEntry in objectSchema.properties | sortKeys %}
+{%     set propertyName = propertyEntry.key %}
+{%     set propertySchema = propertyEntry.value %}
+{%     set propertyType = type(propertySchema, propertyName, objectType, true) %}
+{%     set nullable = objectSchema.required contains propertyName ? '' : '|null' %}
+    * @param {{ propertyType }}{{ nullable }} ${{ propertyName }} {{ propertySchema.description }}
+
+{%   endfor %}
+    */
+  public function __construct(
+{%   for propertyEntry in objectSchema.properties | sortKeys %}
+{%     set propertyName = propertyEntry.key %}
+    ${{ propertyName }}{% if not loop.last %},{% endif %}
+{%   endfor %}
+  ) {
+{%   for propertyEntry in objectSchema.properties | sortKeys %}
+{%     set propertyName = propertyEntry.key %}
+    $this->{{ propertyName }} = ${{ propertyName }};
+{%   endfor %}
+  }
+}
+{% endfor %}

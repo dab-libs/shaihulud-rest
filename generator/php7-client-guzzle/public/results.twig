@@ -1,0 +1,67 @@
+{% for pathsByRouteEntry in paths %}
+{%   set route = pathsByRouteEntry.key %}
+{%   set requestsByMethod = pathsByRouteEntry.value %}
+{%   for requestsByMethodEntry in requestsByMethod %}
+{%     set request = requestsByMethodEntry.value %}
+{%     for responseEntry in request.responses %}
+{%       set statusCode = responseEntry.key %}
+{%       set response = responseEntry.value %}
+{%       if response.content != null and response.content['application/json'] == null %}
+{{         halt('Can not be generated code. ' ~ request.operationId ~ '.responses.' ~ statusCode ~ '.content is not \'application/json\'') }}
+{%       endif %}
+{%       set resultType = resultType(request, statusCode) %}
+{{       writeFile(publicFolder ~ resultType ~ '.php') }}
+<?php declare(strict_types=1);
+
+namespace {{ publicNamespace }};
+
+class {{ resultType }} {
+{%       if statusCode == 'default' %}
+  /** @var int */
+  public $statusCode;
+
+{%       endif %}
+{%       if response.headers != null %}
+  /** @var {{ headersType(request, statusCode) }} */
+  public $headers;
+
+{%       endif %}
+{%       if response.content != null %}
+  /** @var {{ type(response.content['application/json'].schema, 'content', resultType) }} */
+  public $content;
+
+{%       endif %}
+  /**
+{%       if statusCode == 'default' %}
+   * @param int $statusCode HTTP Status Code
+{%       endif %}
+{%       if response.headers != null %}
+    * @param {{ headersType(request, statusCode) }} $headers HTTP Headers
+{%       endif %}
+{%       if response.content != null %}
+    * @param {{ type(response.content['application/json'].schema, 'content', resultType) }} $content Body of HTTP respose
+{%       endif %}
+   */
+  public function __construct(
+{%       set params = [(statusCode == 'default' ? '$statusCode' : null), (response.headers != null ? '$headers' : null), (response.content != null ? '$content' : null)] %}
+{%       for param in params %}
+{%         if param != null %}
+    {{ param }}{% if not loop.last %},{% endif %}
+
+{%         endif %}
+{%       endfor %}
+  ) {
+{%       if statusCode == 'default' %}
+    $this->statusCode = $statusCode;
+{%       endif %}
+{%       if response.headers != null %}
+    $this->headers = $headers;
+{%       endif %}
+{%       if response.content != null %}
+    $this->content = $content;
+{%       endif %}
+  }
+}
+{%     endfor %}
+{%   endfor %}
+{% endfor %}

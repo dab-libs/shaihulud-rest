@@ -1,0 +1,21 @@
+{{ writeFile(rootFolder ~ 'composer.json') }}
+{
+    "name": "{{ vendor }}/{{ package }}",
+    "version": "{{ info.version }}",
+    "type": "library",
+    "authors": [
+        {
+            "name": "{{ info.contact.name }}",
+            "email": "{{ info.contact.email }}"
+        }
+    ],
+    "require": {
+        "php": ">=7.0",
+        "ext-json": "*",
+        "guzzlehttp/guzzle": "^7.0",
+        "guzzlehttp/uri-template": "^0.2.0"
+    },
+    "autoload": {
+        "psr-4": { "{{ namespace }}\\" : "./" }
+    }
+}

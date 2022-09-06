@@ -1,0 +1,175 @@
+expression(
+    'schemaToType',
+    &
+    replace_all(@."$ref", '#/components/schemas/(\\w+)', '\\\\u$1') ||
+    type == 'string' && 'string' ||
+    type == 'integer' && 'int' ||
+    type == 'number' && 'float' ||
+    type == 'boolean' && 'bool' ||
+    type == 'array' && 'array' ||
+    null,
+    @
+).
+expression(
+    'schemaToTypeDoc',
+    &
+    replace_all(@."$ref", '#/components/schemas/(\\w+)', '\\\\u$1') ||
+    type == 'string' && 'string' ||
+    type == 'integer' && 'int' ||
+    type == 'number' && 'float' ||
+    type == 'boolean' && 'bool' ||
+    type == 'array' && apply('schemaToTypeDoc', items) ||
+    null,
+    @
+).
+expression(
+    'schemaToOperationsType',
+    &
+    apply('schemaToType', @) && concat( pascal_case( apply('schemaToType', @)), 'Operations') ||
+    null,
+    @
+).
+expression(
+    'schemaIsPrimitive',
+    &
+    type == 'string' ||
+    type == 'integer' ||
+    type == 'number' ||
+    type == 'boolean',
+    @
+).
+expression(
+    'createTypeInfo',
+    &
+    {
+        primitive: apply('schemaIsPrimitive', schema),
+        type: apply('schemaToType', schema) ||
+              halt(concat('Can be generated code for "', name, '" in "', parent, '"')),
+        operationsType: apply('schemaToOperationsType', schema),
+        arrayItem: schema.type == 'array' && apply('createTypeInfo', {
+            schema: schema.items,
+            name: concat(name, '.item'),
+            parent: parent
+        })
+    },
+    @
+).
+merge(@, {
+    vendor: kebab_case(info.contact.name),
+    majorVersion: set_var('majorVersion', replace_all(info.version, '(\\d+)\\.(\\d+)\\.(\\d+)', '$1')),
+    minorVersion: replace_all(info.version, '(\\d+)\\.(\\d+)\\.(\\d+)', '$2'),
+    apiClass: pascal_case(info.title),
+    apiName: set_var('apiName', pascal_case(info.title)),
+    rootFolder: set_var('rootFolder', './'),
+    vendorNamespace: set_var('vendorNamespace', pascal_case(info.contact.name)),
+    package: concat(kebab_case(info.title), '-server-v', get_var('majorVersion')),
+    bundleFolder: concat(get_var('rootFolder'), 'bundle/'),
+    bundleBase: set_var('bundleBase', concat(get_var('apiName'), 'V', get_var('majorVersion'))),
+    bundleName: set_var('bundleName', concat(get_var('bundleBase'), 'Bundle')),
+    bundleNamespace: concat(get_var('vendorNamespace'), '\\', get_var('bundleName')),
+    bundleExtension: concat(get_var('bundleBase'), 'Extension'),
+    srcFolder: set_var('srcFolder', concat(get_var('rootFolder'), 'src/')),
+    namespace: set_var('namespace', concat(get_var('vendorNamespace'), '\\', get_var('apiName'), '\\v', get_var('majorVersion'))),
+    publicFolder: concat(get_var('srcFolder'), 'Public/'),
+    publicNamespace: concat(get_var('namespace'), '\\Public'),
+    controllerFolder: concat(get_var('srcFolder'), 'Controller/'),
+    controllerNamespace: concat(get_var('namespace'), '\\Controller'),
+    typeOperationFolder: concat(get_var('srcFolder'), 'TypeOperation/'),
+    typeOperationNamespace: concat(get_var('namespace'), '\\TypeOperation'),
+    configFolder: concat(get_var('rootFolder'), 'resource/config/'),
+    testFolder: concat(get_var('rootFolder'), 'test/'),
+    testNamespace: concat(get_var('namespace'), '\\Test'),
+
+    apiKeysInHeader: values(components.securitySchemes)[?type == 'apiKey' && in == 'header'].name,
+    apiKeysInQuery: values(components.securitySchemes)[?type == 'apiKey' && in == 'query'].name,
+    objects: entries(components.schemas, 'key', 'value')[].{
+        type: upper_case_first(key),
+        scheme: value,
+        description: value.description,
+        properties: sort_by(entries(value.properties, 'key', 'value'), &key)[].{
+            description: value.description,
+            name: key,
+            scheme: value,
+            nullableDoc: value.required && '' || ' | null',
+            nullable: value.required && '' || '?',
+            type: [
+                replace_all(value."$ref", '#/components/schemas/(\w+)', '\\u$1'),
+                [
+                    [value][?@.type == 'array']|[0]
+                ][?@]|[0],
+                typeMap[?schemeType == value.type]|[0].type
+            ][?@]|[0]
+        }
+    },
+    controllers: entries(paths, 'route', 'requestsByMethod')[].{
+        route: set_var('route', route),
+        requests: entries(requestsByMethod, 'method', 'request')[].{
+            route: get_var('route'),
+            method: method,
+            request: request,
+            controllerType: set_var('controllerType', concat(set_var('operationId', pascal_case(request.operationId)), 'Controller')),
+            testType: set_var('testType', concat(get_var('operationId'), 'ControllerTests')),
+            actionType: concat(get_var('operationId'), 'Action'),
+            actionMethod: camel_case(request.operationId),
+            parameters: set_var('parameters', request.parameters[].{
+                name: name,
+                path: in == 'path',
+                query: in == 'query',
+                header: in == 'header',
+                cookie: in == 'cookie',
+                in: in,
+                required: required,
+                schema: schema,
+                typeInfo: apply('createTypeInfo', {
+                    schema: schema,
+                    name: name,
+                    parent: get_var('controllerType')
+                }),
+                bagName: property({path: 'attributes', query: 'query', header: 'headers', cookie: 'cookies'}, in),
+                bagMethod: if(schema.type == 'array', @, &'all', &'get')
+            }),
+            body: set_var('body', if(request.requestBody.content."application/json".schema, @, &{
+                schema: request.requestBody.content."application/json".schema,
+                typeInfo: apply('createTypeInfo', {
+                    schema: request.requestBody.content."application/json".schema,
+                    name: 'body',
+                    parent: get_var('controllerType')
+                })
+            })),
+            results: set_var('results', entries(request.responses, 'statusCode', 'response')[].{
+                statusCode: statusCode,
+                type: concat(get_var('operationId'), 'Result', upper_case_first(statusCode)),
+                content: apply('createTypeInfo', {
+                    schema: response.content."application/json".schema,
+                    name: 'result.content',
+                    parent: get_var('operationId')
+                }),
+                headersType: if(response.headers, @, &concat(get_var('operationId'), 'Headers', upper_case_first(statusCode))),
+                headers: response.headers.if(@, @, &entries(@, 'name', 'header')[].{
+                    name: name,
+                    fieldName: camel_case(name),
+                    schema: schema,
+                    typeInfo: apply('createTypeInfo', {
+                        schema: schema,
+                        name: name,
+                        parent: get_var('controllerType')
+                    })
+                })
+            }),
+            importedTypes: create_set([
+                get_var('parameters')[?!typeInfo.primitive].type,
+                get_var('parameters')[?!typeInfo.arrayItem.primitive].typeInfo.arrayItem.type,
+                get_var('results')[?!content.primitive].content.type,
+                get_var('results')[?!content.arrayItem.primitive].content.arrayItem.type
+            ][])[*],
+            importedOperationsTypes: create_set([
+                get_var('parameters')[].typeInfo.operationsType,
+                get_var('parameters')[].typeInfo.arrayItem.operationsType,
+                get_var('body')[].typeInfo.operationsType,
+                get_var('body')[].typeInfo.arrayItem.operationsType,
+                get_var('results')[].content.operationsType,
+                get_var('results')[].content.arrayItem.operationsType
+            ][])[*]
+        }
+    }|[].requests[]
+})

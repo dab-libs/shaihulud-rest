@@ -1,0 +1,16 @@
+{{writeFile(bundleFolder  ~ bundleName ~ '.php') }}
+<?php declare(strict_types=1);
+
+namespace {{ bundleNamespace }};
+
+use Symfony\Component\HttpKernel\Bundle\Bundle;
+
+class {{ bundleName }} extends Bundle {
+  public function getContainerExtension() {
+    return new {{ bundleExtension }}();
+  }
+
+  public function getPath() {
+    return realpath(parent::getPath() . '/..');
+  }
+}

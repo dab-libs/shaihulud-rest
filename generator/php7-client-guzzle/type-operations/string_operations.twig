@@ -1,0 +1,110 @@
+{{ writeFile(typeOperationFolder ~ 'StringOperations.php') }}
+<?php declare(strict_types=1);
+
+namespace {{ typeOperationNamespace }};
+
+use Exception;
+
+class StringOperations {
+  /**
+   * @param string|null $value
+   * @return mixed
+   */
+  public static function decodeJson($value) {
+    if ($value === null) {
+      return null;
+    }
+    return json_decode($value);
+  }
+
+  /**
+   * @param string|null $value
+   * @return string|null
+   */
+  public static function encodeJson($value) {
+    if ($value === null) {
+      return null;
+    }
+    return json_encode($value);
+  }
+
+  /**
+   * @param string|null $value
+   * @return mixed
+   */
+  public static function decodeSimple($value) {
+    if ($value === null) {
+      return null;
+    }
+    return $value
+  }
+
+  /**
+   * @param string|null $value
+   * @return string|null
+   */
+  public static function encodeSimple($value) {
+    if ($value === null) {
+      return null;
+    }
+    return $value;
+  }
+
+  /**
+   * @param mixed $decoded
+   * @param string $name
+   * @param bool $required
+   * @param int $minLength
+   * @param int|null $maxLength
+   * @return void
+   * @throws Exception
+   */
+  public static function validate($decoded, $name, $required, $minLength, $maxLength) {
+    if ($decoded === null) {
+      if ($required) {
+        throw new Exception($name . ' is not found');
+      }
+      return;
+    }
+    if (!is_string($decoded)) {
+      throw new Exception($name . ' is not a string');
+    }
+    self::validateMaxLength($decoded, $name, $maxLength);
+    self::validateMinLength($decoded, $name, $minLength);
+  }
+
+  /**
+   * @param mixed $value
+   * @return string|null
+   */
+  public static function create($decoded) {
+    if ($decoded === null) {
+      return null;
+    }
+    return strval($decoded);
+  }
+
+  /**
+   * @param string $value
+   * @param string $name
+   * @param int $maxLength
+   * @throws Exception
+   */
+  private static function validateMaxLength($value, $name, $maxLength) {
+    if ($maxLength !== null && strlen($value) > $maxLength) {
+      throw new Exception($name . ' is too long. Its length is greater then ' . $maxLength);
+    }
+  }
+
+  /**
+   * @param string $value
+   * @param string $name
+   * @param int $minLength
+   * @throws Exception
+   */
+  private static function validateMinLength($value, $name, $minLength) {
+    if ($minLength !== null && strlen($value) < $minLength) {
+      throw new Exception($name . ' is too short. Its length is littler then ' . $minLength);
+    }
+  }
+}

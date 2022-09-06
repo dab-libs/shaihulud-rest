@@ -1,0 +1,155 @@
+{{ writeFile(typeOperationFolder ~ 'ArrayOperations.php') }}
+<?php declare(strict_types=1);
+
+namespace {{ typeOperationNamespace }};
+
+use Exception;
+
+class ArrayOperations {
+  /**
+   * @param string|null $value
+   * @return mixed
+   */
+  public static function decodeJson($value) {
+    if ($value === null) {
+      return null;
+    }
+    return json_decode($value);
+  }
+
+  /**
+   * @param array|null $value
+   * @return string|null
+   */
+  public static function encodeJson($value) {
+    if ($value === null) {
+      return null;
+    }
+    return json_encode($value);
+  }
+
+  /**
+   * @param string[]|null $value
+   * @return array|null
+   */
+  public static function decodeSimple($value) {
+    if ($value === null) {
+      return null;
+    }
+    $decoded = [];
+    foreach ($value as $item) {
+      $jsonDecoded = json_decode($item);
+      if ($jsonDecoded === null) {
+        $decoded[] = $item;
+      }
+      else {
+        $decoded[] = $jsonDecoded;
+      }
+    }
+    return $decoded;
+  }
+
+  /**
+   * @param array|null $value
+   * @return array|null
+   */
+  public static function encodeSimple($value) {
+    if ($value === null) {
+      return null;
+    }
+    $encoded = [];
+    foreach ($value as $item) {
+      if (is_string($item)) {
+        $encoded[] = $item;
+      }
+      else {
+        $encoded[] = json_encode($item);
+      }
+    }
+    return $encoded;
+  }
+
+  /**
+   * @param array|null $decoded
+   * @param string $name
+   * @param bool $required
+   * @param int $minItems
+   * @param int|null $maxItems
+   * @param callable $validateItem
+   * @return void
+   * @throws Exception
+   */
+  public static function validate($decoded, $name, $required, $minItems, $maxItems, $validateItem) {
+    if ($decoded === null) {
+      if ($required === true) {
+        throw new Exception($name . ' is not found');
+      }
+      return;
+    }
+
+    if (!is_array($decoded)) {
+      throw new Exception($name . ' is not a array');
+    }
+
+    self::validateMinItems($decoded, $name, $minItems);
+    self::validateMaxItems($decoded, $name, $maxItems);
+    self::validateItems($decoded, $name, $validateItem);
+  }
+
+  /**
+   * @param mixed $decoded
+   * @param callable $createItem
+   * @return array|null
+   */
+  public static function create($decoded, $createItem) {
+    if ($decoded === null) {
+      return null;
+    }
+    $array = [];
+    foreach ($decoded as $item) {
+      $array[] = $createItem($item);
+    }
+    return $array;
+  }
+
+  /**
+   * @param array $value
+   * @param string $name
+   * @param int $minItems
+   * @throws Exception
+   */
+  private static function validateMinItems($value, $name, $minItems) {
+    if (count($value) < $minItems) {
+      throw new Exception($name . ' is too short. Its length is littler then ' . $minItems);
+    }
+  }
+
+  /**
+   * @param array $value
+   * @param string $name
+   * @param int|null $maxItems
+   * @throws Exception
+   */
+  private static function validateMaxItems($value, $name, $maxItems) {
+    if ($maxItems !== null && count($value) > $maxItems) {
+      throw new Exception($name . ' is too long. Its length is greater then ' . $minItems);
+    }
+  }
+
+  /**
+   * @param array $value
+   * @param string $name
+   * @param callable $validateItem
+   * @throws Exception
+   */
+  private static function validateItems($value, $name, $validateItem) {
+    try {
+      foreach ($value as $i => $item) {
+        $validateItem($item, (string) $i);
+      }
+    }
+    catch (Exception $e) {
+      throw new Exception($name . '\'s item is not valid. ' . $e->getMessage(), 0, $e);
+    }
+  }
+}

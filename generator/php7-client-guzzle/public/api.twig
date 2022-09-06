@@ -1,0 +1,173 @@
+{% import 'public/api-macro.twig' %}
+{{ writeFile(publicFolder ~ apiClass ~ '.php') }}
+<?php declare(strict_types=1);
+
+namespace {{ publicNamespace }};
+
+use Exception;
+use GuzzleHttp\Client;
+use GuzzleHttp\RequestOptions;
+use GuzzleHttp\UriTemplate\UriTemplate;
+{% set used = [] %}
+{% for pathsByRouteEntry in paths %}
+{%   set path = pathsByRouteEntry.key %}
+{%   set requestsByMethod = pathsByRouteEntry.value %}
+{%   for requestsByMethodEntry in requestsByMethod %}
+{%     set request = requestsByMethodEntry.value %}
+{%     for parameter in request.parameters %}
+{%       set operationsType = operationsType(parameter.schema, parameter.name, request.operationId) %}
+{{ 'use ' ~ typeOperationNamespace ~ BACK_SLASH ~ operationsType ~ ";
+" | oneTime(apiClass)}}
+{%     endfor %}
+{%     if request contains 'requestBody' %}
+{%       if request.requestBody.content['application/json'] == null %}
+{{         halt('Can not be generated code for content is not \'application/json\'') }}
+{%       endif %}
+{%       set schema = request.requestBody.content['application/json'].schema %}
+{%       set operationsType = operationsType(schema, 'body', request.operationId) %}
+{{ 'use ' ~ typeOperationNamespace ~ BACK_SLASH ~ operationsType ~ ";
+" | oneTime(apiClass)}}
+{%     endif %}
+{%     for responseEntry in request.responses %}
+{%       set statusCode = responseEntry.key %}
+{%       set response = responseEntry.value %}
+{%       if response.content != null and response.content['application/json'] == null %}
+{{         halt('Can not be generated code. ' ~ request.operationId ~ '.responses.' ~ statusCode ~ '.content is not \'application/json\'') }}
+{%       endif %}
+{%       set operationsType = operationsType(response.content['application/json'].schema, 'Result ' ~ statusCode, request.operationId) %}
+{{ 'use ' ~ typeOperationNamespace ~ BACK_SLASH ~ operationsType ~ ";
+" | oneTime(apiClass)}}
+{%     endfor %}
+{%   endfor %}
+{% endfor %}
+
+
+class {{ apiClass }} {
+  /** @var int */
+  private $timeout = 30;
+
+  /** @var string */
+  private $baseUrl;
+
+{{ mapSecurityFields(security, components.securitySchemes) }}
+
+  /**
+   * @param string $baseUrl
+{{ mapSecurityParamDocs(security, components.securitySchemes) }}
+   */
+  public function __construct(
+    $baseUrl{{ mapSecurityParams(security, components.securitySchemes) }}
+
+   ) {
+    $this->baseUrl = $baseUrl;
+{{ mapSecurityParamAssigns(security, components.securitySchemes) }}
+  }
+
+{% for pathsByRouteEntry in paths %}
+{%     set path = pathsByRouteEntry.key %}
+{%     set requestsByMethod = pathsByRouteEntry.value %}
+{%     for requestsByMethodEntry in requestsByMethod | sortKeys %}
+{%         set httpMethod = requestsByMethodEntry.key %}
+{%         set request = requestsByMethodEntry.value %}
+  /**
+   * {{ request.summary }}
+
+{%          for parameter in request.parameters | sortKeys %}
+{%              set type = type(parameter.schema, parameter.name, request.operationId, true) %}
+{%              set nullable = parameter.required ? '' : '|null' %}
+   * @param {{ type }}{{ nullable }} ${{ parameter.name }} {{ parameter.description }}
+
+{%          endfor %}
+{%          if request contains 'requestBody' %}
+{%            if request.requestBody.content['application/json'] == null %}
+{{              halt('Can not be generated code for content is not \'application/json\'') }}
+{%            endif %}
+{%            set schema = request.requestBody.content['application/json'].schema %}
+{%            set type = type(schema, 'body', request.operationId) %}
+   * @param {{ type }} $body
+{%          endif %}
+   * @return {{ result(request) }}
+
+   * @throws Exception
+   */
+{%         set method = methodName(request) %}
+  public function {{ method }}(
+{%          for parameter in request.parameters | sortKeys %}
+    ${{ parameter.name }}{% if not loop.last or request contains 'requestBody' %},{% endif %}
+{%          endfor %}
+{%          if request contains 'requestBody' %}
+{%            if request.requestBody.content['application/json'] == null %}
+{{              halt('Can not be generated code for content is not \'application/json\'') }}
+{%            endif %}
+    $body
+{%          endif %}
+  ) {
+    $client = new Client([
+      'base_uri' => $this->baseUrl,
+      'timeout' => $this->timeout,
+    ]);
+
+{{          mapParameters(request.parameters, 'path', request.operationId) }}
+{{          mapParameters(request.parameters, 'query', request.operationId) }}
+{{          mapParameters(request.parameters, 'header', request.operationId) }}
+{{          mapParameters(request.parameters, 'cookie', request.operationId) }}
+{{          mapSecurity(security, components.securitySchemes) }}
+
+    $uri = UriTemplate::expand('{{ path }}', $path);
+    $response = $client->request(
+      '{{ httpMethod }}', $uri,
+      [
+        RequestOptions::QUERY => $query,
+        RequestOptions::HEADERS => $header,
+        RequestOptions::COOKIES => $cookie,
+      ]
+    );
+    $statusCode = $response->getStatusCode();
+{%     for responseEntry in request.responses %}
+{%       set statusCode = responseEntry.key %}
+{%       set response = responseEntry.value %}
+{%       if response.content != null and response.content['application/json'] == null %}
+{{         halt('Can not be generated code. ' ~ request.operationId ~ '.responses.' ~ statusCode ~ '.content is not \'application/json\'') }}
+{%       endif %}
+{%       if statusCode != 'default' %}
+{%         set operationsType = operationsType(response.content['application/json'].schema, 'Result ' ~ statusCode, request.operationId) %}
+{%         set resultType = resultType(request, statusCode) %}
+    if ($statusCode === {{ statusCode }}) {
+      $decoded = {{ operationsType }}::decodeJson($response->getBody());
+      $content = {{ operationsType }}::create($decoded);
+      return new {{ resultType }}($content);
+    }
+{%       endif %}
+{%     endfor %}
+{%     for responseEntry in request.responses %}
+{%       set statusCode = responseEntry.key %}
+{%       set response = responseEntry.value %}
+{%       if response.content != null and response.content['application/json'] == null %}
+{{         halt('Can not be generated code. ' ~ request.operationId ~ '.responses.' ~ statusCode ~ '.content is not \'application/json\'') }}
+{%       endif %}
+{%       if statusCode == 'default' %}
+{%         set operationsType = operationsType(response.content['application/json'].schema, 'Result ' ~ statusCode, request.operationId) %}
+{%         set resultType = resultType(request, statusCode) %}
+    $decoded = {{ operationsType }}::decodeJson($response->getBody());
+    $content = {{ operationsType }}::create($decoded);
+    return new {{ resultType }}($statusCode, $content);
+{%       endif %}
+{%     endfor %}
+  }
+
+{%     endfor %}
+{% endfor %}
+  /**
+   * @return int
+   */
+  public function getTimeout() {
+    return $this->timeout;
+  }
+
+  /**
+   * @param int $timeout
+   */
+  public function setTimeout(int $timeout) {
+    $this->timeout = $timeout;
+  }
+}

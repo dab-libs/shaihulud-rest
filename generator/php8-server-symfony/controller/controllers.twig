@@ -1,0 +1,98 @@
+{% for controller in controllers %}
+{%   set request = controller.request %}
+{{   writeFile(controllerFolder ~ controller.controllerType ~ '.php') }}
+<?php declare(strict_types=1);
+
+namespace {{ controllerNamespace }};
+
+use Exception;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
+use Doctrine\ORM\EntityManagerInterface;
+use {{ publicNamespace }}\{{ controller.actionType }};
+{%     for result in controller.results %}
+use {{ publicNamespace }}\{{ result.type }};
+{%     endfor %}
+{%     for type in controller.importedOperationsTypes %}
+use {{ typeOperationNamespace }}\{{ type }};
+{%     endfor %}
+
+class {{ controller.controllerType }} {
+  private ?{{ controller.actionType }} $action;
+  private EntityManagerInterface $entityManager;
+
+  public function __construct(?{{ controller.actionType }} $action, EntityManagerInterface $entityManager) {
+    $this->action = $action;
+    $this->entityManager = $entityManager;
+  }
+
+  /**
+   * Для тестирования
+   * @param EntityManagerInterface $entityManager
+   */
+  public function setEntityManager(EntityManagerInterface $entityManager): void {
+    $this->entityManager = $entityManager;
+  }
+
+  public function {{ controller.actionMethod }}(Request $request): Response {
+    try {
+      $this->entityManager->beginTransaction();
+
+{%     for parameter in controller.parameters %}
+      ${{ parameter.name }}Decoded = {{ parameter.typeInfo.operationsType }}::decodeSimple($request->{{ parameter.bagName }}->{{ parameter.bagMethod }}('{{ parameter.name }}'));
+      {{ parameter.typeInfo.operationsType }}::validate(decoded: ${{ parameter.name }}Decoded, name: '{{ parameter.name }}', {{ typeOptions(parameter.name, parameter.required, parameter.schema, components.schemas) }});
+      ${{ parameter.name }} = {{ parameter.typeInfo.operationsType }}::create(decoded: ${{ parameter.name }}Decoded{{ arrayItemCreator(parameter.schema) }});
+
+{%     endfor %}
+{%     if controller.body != null %}
+{%       set schema = request.requestBody.content['application/json'].schema %}
+      $bodyDecoded = {{ controller.body.typeInfo.operationsType }}::decodeJson($request->getContent());
+      {{ controller.body.typeInfo.operationsType }}::validate(decoded: $bodyDecoded, name: 'body', {{ typeOptions('body', true, schema, components.schemas) }});
+      $body = {{ controller.body.typeInfo.operationsType }}::create(decoded: $bodyDecoded{{ arrayItemCreator(schema) }});
+
+{%     endif %}
+     $result = $this->action->{{ controller.actionMethod }}(
+{%     for parameter in request.parameters %}
+        ${{ parameter.name }},
+{%     endfor %}
+{%     if request.requestBody.content['application/json'] != null %}
+        $body,
+{%     endif %}
+      );
+
+      $this->entityManager->flush();
+      $this->entityManager->commit();
+    }
+    catch (Exception $exception) {
+      $this->entityManager->rollBack();
+      $result = $this->action->createExceptedResult($exception);
+    }
+
+{%     for result in controller.results %}
+{%       if result.statusCode != 'default' %}
+    if ($result instanceof {{ result.type }}) {
+      return new Response({{ result.content.operationsType }}::encodeJson($result->content), {{ result.statusCode }}, [
+{%         for header in result.headers %}
+        '{{ header.name }}' => json_encode($result->headers->{{ header.fieldName }}),
+{%         endfor %}
+      ]);
+    }
+{%       endif %}
+{%     endfor %}
+
+{%     for result in controller.results %}
+{%       if result.statusCode == 'default' %}
+    if ($result instanceof {{ result.type }}) {
+      return new Response({{ result.content.operationsType }}::encodeJson($result->content), $result->statusCode, [
+{%         for header in result.headers %}
+        '{{ header.name }}' => json_encode($result->headers->{{ header.fieldName }}),
+{%         endfor %}
+      ]);
+    }
+{%       endif %}
+{%     endfor %}
+
+    return new Response('', 500);
+  }
+}
+{% endfor %}

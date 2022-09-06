@@ -1,0 +1,20 @@
+{{writeFile(configFolder  ~ 'routing.yaml') }}
+{% for pathsByRouteEntry in paths %}
+{%   set route = pathsByRouteEntry.key %}
+{%   set requestsByMethod = pathsByRouteEntry.value %}
+{%   for requestsByMethodEntry in requestsByMethod %}
+{%     set httpMethod = requestsByMethodEntry.key %}
+{%     set request = requestsByMethodEntry.value %}
+{%     set actionType = actionType(request) %}
+{%     set fullControllerType = controllerNamespace ~ BACK_SLASH ~ controllerType(request) %}
+{%     set methodName = methodName(request) %}
+{{ fullControllerType | replaceAll('\\', '_') | lower }}_{{ methodName | lower }}:
+    path:       {{ route }}
+
+    controller: {{ fullControllerType }}::{{ methodName }}
+
+    methods:    {{ httpMethod }}
+
+
+{%     endfor %}
+{% endfor %}
